@@ -3,8 +3,6 @@
 #include "em/macros/meta/common.h"
 #include "em/macros/portable/always_inline.h"
 #include "em/macros/portable/artificial.h"
-#include "em/macros/utils/returns.h"
-#include "em/macros/utils/weak_bool_cast.h"
 #include "em/math/larger_type.h"
 
 #include <type_traits>

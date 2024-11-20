@@ -28,7 +28,7 @@ namespace em::Math::VectorOps
     struct NotEqual
     {
         template <typename T, typename U>
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL static constexpr auto operator()(T &&t, U &&u) EM_RETURNS(EM_WEAK_BOOL_CAST(EM_FWD(t) != EM_FWD(u)))
+        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL static constexpr auto operator()(T &&t, U &&u) EM_RETURNS(EM_FWD(t) != EM_FWD(u) ? true : false)
     };
 
     // This is used to implement `<=>`.

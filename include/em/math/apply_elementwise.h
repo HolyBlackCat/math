@@ -4,7 +4,6 @@
 #include "em/macros/portable/artificial.h"
 #include "em/macros/utils/forward.h"
 #include "em/macros/utils/returns.h"
-#include "em/macros/utils/weak_bool_cast.h"
 
 #include <functional>
 #include <utility>
