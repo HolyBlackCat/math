@@ -7,6 +7,8 @@
 #include <cstdint>
 
 // Short spellings for types, to bake them into type names.
+// This header doesn't define any typedefs by itself, only the macros.
+// e.g. `em/math/vector.h` makes its own typedefs using this.
 
 #define EM_MATH_TYPE_SHORTHANDS(X, ...) \
     X( b   , bool               __VA_OPT__(,)__VA_ARGS__ ) \

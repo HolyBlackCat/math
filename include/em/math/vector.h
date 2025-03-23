@@ -8,7 +8,7 @@
 #include "em/macros/utils/cvref.h"
 #include "em/math/type_shorthands.h"
 #include "em/math/vector_operators.h"
-#include "em/meta/qualifiers.h"
+#include "em/meta/cvref.h"
 
 #include <utility>
 
@@ -218,6 +218,7 @@ namespace em::Math
                                       if (i == 1) return EM_FWD(self).y;
                 if constexpr (N >= 3) if (i == 2) return EM_FWD(self).z;
                 if constexpr (N >= 4) if (i == 3) return EM_FWD(self).w;
+                std::unreachable();
             }
             else
             {
@@ -278,8 +279,12 @@ namespace em::Math
 }
 
 // `using namespace` this to import some common names.
-namespace em::Math::Common
+namespace em
 {
-    using Math::vec;
-    EM_MATH_IMPORT_TYPE_SHORTHANDS_VEC(Math::,vec)
+    namespace Math::Common
+    {
+        using Math::vec;
+        EM_MATH_IMPORT_TYPE_SHORTHANDS_VEC(Math::,vec)
+    }
+    using namespace Math::Common;
 }
