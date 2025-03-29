@@ -149,7 +149,7 @@ namespace em::Math
                 [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto apply(auto &&f) EM_QUAL EM_RETURNS EM_P(EM_FWD(f) EM_P(EM_FOREACH_A(seq,(,))( EM_FWD_SELF.EM_A0 ))) \
                 /* Change the element type. */\
                 template <Meta::cvref_unqualified U> requires(std::is_constructible_v<U, T>) \
-                [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto to() EM_QUAL EM_RETURNS EM_P(vec<U,N> EM_P(EM_FOREACH_A(seq,(,))( EM_FWD_SELF.EM_A0 ))) \
+                [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto to() EM_QUAL EM_RETURNS EM_P(vec<U,N> EM_P(EM_FOREACH_A(seq,(,))( U EM_P(EM_FWD_SELF.EM_A0) ))) \
             ) \
         )
 
@@ -231,6 +231,16 @@ namespace em::Math
         [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto sum() EM_RETURNS(this->reduce(Ops::Add{}))
         // The product of elements.
         [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto prod() EM_RETURNS(this->reduce(Ops::Mul{}))
+
+        // Convert to shorter or longer vectors. When converting to a longer vector, either pass the missing components or they will be zeroed.
+        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr vec2<T> to_vec2(this auto &&self) requires (N > 2) {return vec2<T>(EM_FWD(self).x, EM_FWD(self).y);}
+        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr vec3<T> to_vec3(this auto &&self) requires (N > 3) {return vec3<T>(EM_FWD(self).x, EM_FWD(self).y, EM_FWD(self).z);}
+        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr vec3<T> to_vec3(this auto &&self, T z     ) requires (N == 2) {return vec3<T>(EM_FWD(self).x, EM_FWD(self).y, std::move(z));}
+        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr vec4<T> to_vec4(this auto &&self, T z, T w) requires (N == 2) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, std::move(z), std::move(w));}
+        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr vec4<T> to_vec4(this auto &&self,      T w) requires (N == 3) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, EM_FWD(self).z, std::move(w));}
+        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr vec3<T> to_vec3(this auto &&self) requires (N == 2) {return vec3<T>(EM_FWD(self).x, EM_FWD(self).y, T{});}
+        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr vec4<T> to_vec4(this auto &&self) requires (N == 2) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, T{}, T{});}
+        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr vec4<T> to_vec4(this auto &&self) requires (N == 3) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, EM_FWD(self).z, T{});}
     };
 
     // The obvious deduction guide, using `larger_t`.

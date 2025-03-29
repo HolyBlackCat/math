@@ -40,3 +40,25 @@ static_assert(std::is_convertible_v<em::Math::ivec4, em::Math::fvec4>);
 // `.to<T>()`
 
 static_assert(em::Math::fvec4(1.8f,2.1f,3,4).to<int>() == em::Math::ivec4(1,2,3,4));
+
+
+// `.to_vecN()`
+
+static_assert(em::ivec2(10,20).to_vec3() == em::ivec3(10,20,0));
+static_assert(em::ivec2(10,20).to_vec4() == em::ivec4(10,20,0,0));
+static_assert(em::ivec2(10,20).to_vec3(30) == em::ivec3(10,20,30));
+static_assert(em::ivec2(10,20).to_vec4(30,40) == em::ivec4(10,20,30,40));
+
+static_assert(em::ivec3(10,20,30).to_vec2() == em::ivec2(10,20));
+static_assert(em::ivec3(10,20,30).to_vec4() == em::ivec4(10,20,30,0));
+static_assert(em::ivec3(10,20,30).to_vec4(40) == em::ivec4(10,20,30,40));
+
+static_assert(em::ivec4(10,20,30,40).to_vec2() == em::ivec2(10,20));
+static_assert(em::ivec4(10,20,30,40).to_vec3() == em::ivec3(10,20,30));
+
+template <typename T> concept CanCallToVec2 = requires(T t){t.to_vec2();};
+template <typename T> concept CanCallToVec3 = requires(T t){t.to_vec3();};
+template <typename T> concept CanCallToVec4 = requires(T t){t.to_vec4();};
+static_assert(!CanCallToVec2<em::ivec2> && CanCallToVec2<em::ivec3> && CanCallToVec2<em::ivec4>);
+static_assert(CanCallToVec3<em::ivec2> && !CanCallToVec3<em::ivec3> && CanCallToVec3<em::ivec4>);
+static_assert(CanCallToVec4<em::ivec2> && CanCallToVec4<em::ivec3> && !CanCallToVec4<em::ivec4>);
