@@ -228,9 +228,9 @@ namespace em::Math
         }
 
         // The sum of elements.
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto sum() EM_RETURNS(this->reduce(Ops::Add{}))
+        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto sum() EM_REQ_RETURNS(this->reduce(Ops::Add{}))
         // The product of elements.
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto prod() EM_RETURNS(this->reduce(Ops::Mul{}))
+        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto prod() EM_REQ_RETURNS(this->reduce(Ops::Mul{}))
 
         // Convert to shorter or longer vectors. When converting to a longer vector, either pass the missing components or they will be zeroed.
         [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr vec2<T> to_vec2(this auto &&self) requires (N > 2) {return vec2<T>(EM_FWD(self).x, EM_FWD(self).y);}
