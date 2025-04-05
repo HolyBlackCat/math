@@ -60,7 +60,7 @@ namespace em::Math::VectorOps
         [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto operator op_(A &&a, B &&b) EM_RETURNS((apply_elementwise_nontrivial)(Ops::name_{}, EM_FWD(a), EM_FWD(b))) \
         /* Assignment. */\
         template <typename A, typename B> requires(_adl_em_vec_allow_operator(Ops::name_{}, Meta::Tag<A &&>{}, Meta::Tag<B &&>{})) \
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto operator EM_CAT(op_,=)(A &&a, B &&b) EM_RETURNS((void((apply_elementwise_nontrivial)(Ops::EM_CAT(name_, Assign){}, EM_FWD(a), EM_FWD(b))), a))
+        EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto operator EM_CAT(op_,=)(A &&a, B &&b) EM_RETURNS((void((apply_elementwise_nontrivial)(Ops::EM_CAT(name_, Assign){}, EM_FWD(a), EM_FWD(b))), a))
     EM_MATH_OPS_BINARY(DETAIL_EM_VEC_BINARY_OP)
     #undef DETAIL_EM_VEC_BINARY_OP
 
