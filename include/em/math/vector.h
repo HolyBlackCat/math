@@ -6,6 +6,7 @@
 #include "em/macros/portable/assume.h"
 #include "em/macros/portable/if_consteval.h"
 #include "em/macros/utils/cvref.h"
+#include "em/math/rebind.h"
 #include "em/math/type_shorthands.h"
 #include "em/math/vector_operators.h"
 #include "em/meta/cvref.h"
@@ -283,7 +284,7 @@ namespace em::Math
     namespace Customize
     {
         template <Meta::cvref_unqualified A, Meta::cvref_unqualified B>
-        requires (vector<A> || vector<B>) && have_common_vec_size<A, B>
+        requires (vector<A> || vector<B>) && have_common_vec_size<A, B> && have_larger_type<vec_base_t<A>, vec_base_t<B>>
         struct LargerType<A, B> {using type = vec<larger_t<vec_base_t<A>, vec_base_t<B>>, common_vec_size<A, B>>;};
     }
 }
