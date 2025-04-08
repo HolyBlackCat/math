@@ -1,11 +1,11 @@
 #pragma once
 
 #include "em/macros/meta/codegen.h"
-#include "em/macros/portable/always_inline.h"
-#include "em/macros/portable/artificial.h"
 #include "em/macros/portable/assume.h"
 #include "em/macros/portable/if_consteval.h"
+#include "em/macros/portable/tiny_func.h"
 #include "em/macros/utils/cvref.h"
+#include "em/math/namespaces.h"
 #include "em/math/rebind.h"
 #include "em/math/type_shorthands.h"
 #include "em/math/vector_operators.h"
@@ -123,23 +123,23 @@ namespace em::Math
 
         #define DETAIL_EM_VEC(N, seq, reduce_) \
             T EM_CODEGEN(seq,(,), EM_1{} ); \
-            [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL \
+            [[nodiscard]] EM_TINY \
             constexpr VectorMembers() noexcept(std::is_nothrow_constructible_v<T>) {} \
             /* Construct elementwise: */ \
             /* This is intentionally not templated (with `explicit(can_safely_convert)`), because we almost always */ \
             /*   use the explicit notation anyway, and we want to disable narrowing conversions even in that case. */ \
             /* And it's easier to delegate the checking to the `-Wconversion` warnings than to do it ourselves. */ \
-            [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL \
+            [[nodiscard]] EM_TINY \
             constexpr VectorMembers( EM_CODEGEN(seq,(,), T EM_1 ) ) noexcept(std::is_nothrow_move_constructible_v<T>) \
                 : EM_CODEGEN(seq,(,), EM_1 EM_P(std::move EM_P(EM_1)) ) \
             {} \
             /* Fill with the same element: */ \
-            [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL explicit \
+            [[nodiscard]] EM_TINY explicit \
             constexpr VectorMembers(T n) noexcept(std::is_nothrow_copy_constructible_v<T> && std::is_nothrow_move_constructible_v<T>) \
                 : EM_CODEGEN(seq,(,), EM_1 EM_P(EM_2_OPT(n)) ) \
             {} \
             /* Convert from a vector of another type: */ \
-            template <typename U> requires(vec_size<U> == N) [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL explicit(!can_safely_convert<U, vec<T,N>>) \
+            template <typename U> requires(vec_size<U> == N) [[nodiscard]] EM_TINY explicit(!can_safely_convert<U, vec<T,N>>) \
             constexpr VectorMembers(U &&other) noexcept(std::is_nothrow_constructible_v<T, vec_base_cvref_t<U &&>>) requires std::is_constructible_v<T, vec_base_cvref_t<U>> \
                 : EM_CODEGEN(seq,(,), EM_1 EM_P(T EM_P(std::forward_like<U> EM_P(other.EM_1))) ) \
             {} \
@@ -147,14 +147,14 @@ namespace em::Math
             /*   see: https://stackoverflow.com/q/79081096/2752075 */\
             EM_MAYBE_CONST_LR( \
                 /* Applies unary functor to each element, returns a new vector. */\
-                [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto map(auto &&f) EM_QUAL EM_RETURNS EM_P(rebind_to<std::decay_t<decltype EM_P(f EM_P(EM_FWD_SELF.x))>, Derived> EM_P(EM_CODEGEN(seq,(,), f EM_E(EM_LP EM_FWD_SELF).EM_1 EM_E(EM_RP) ))) \
+                [[nodiscard]] EM_TINY constexpr auto map(auto &&f) EM_QUAL EM_RETURNS EM_P(rebind_to<std::decay_t<decltype EM_P(f EM_P(EM_FWD_SELF.x))>, Derived> EM_P(EM_CODEGEN(seq,(,), f EM_E(EM_LP EM_FWD_SELF).EM_1 EM_E(EM_RP) ))) \
                 /* Calls a function with all elements as parameters. */\
-                [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto apply(auto &&f) EM_QUAL EM_RETURNS EM_P(EM_FWD(f) EM_P(EM_CODEGEN(seq,(,), EM_E(EM_FWD_SELF).EM_1 ))) \
+                [[nodiscard]] EM_TINY constexpr auto apply(auto &&f) EM_QUAL EM_RETURNS EM_P(EM_FWD(f) EM_P(EM_CODEGEN(seq,(,), EM_E(EM_FWD_SELF).EM_1 ))) \
                 /* Change the element type. */\
                 template <Meta::cvref_unqualified U> requires(std::is_constructible_v<U, T>) \
-                [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto to() EM_QUAL EM_RETURNS EM_P(vec<U,N> EM_P(EM_CODEGEN(seq,(,), U EM_E(EM_LP EM_FWD_SELF).EM_1 EM_E(EM_RP) ))) \
+                [[nodiscard]] EM_TINY constexpr auto to() EM_QUAL EM_RETURNS EM_P(vec<U,N> EM_P(EM_CODEGEN(seq,(,), U EM_E(EM_LP EM_FWD_SELF).EM_1 EM_E(EM_RP) ))) \
                 /* Reduces all elements over a binary function. */\
-                [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto reduce(auto &&f) EM_QUAL EM_RETURNS EM_P( EM_UNWRAP_CODE(reduce_) )\
+                [[nodiscard]] EM_TINY constexpr auto reduce(auto &&f) EM_QUAL EM_RETURNS EM_P( EM_UNWRAP_CODE(reduce_) )\
             )
 
         template <typename T, typename Derived>
@@ -192,13 +192,13 @@ namespace em::Math
         // reduce(f) // reduce over binary functor
 
         // RGBA-style member accessors.
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto &&r(this auto &&self) noexcept                   {return EM_FWD(self).x;}
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto &&g(this auto &&self) noexcept                   {return EM_FWD(self).y;}
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto &&b(this auto &&self) noexcept requires (N >= 3) {return EM_FWD(self).z;}
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto &&a(this auto &&self) noexcept requires (N >= 4) {return EM_FWD(self).w;}
+        [[nodiscard]] EM_TINY constexpr auto &&r(this auto &&self) noexcept                   {return EM_FWD(self).x;}
+        [[nodiscard]] EM_TINY constexpr auto &&g(this auto &&self) noexcept                   {return EM_FWD(self).y;}
+        [[nodiscard]] EM_TINY constexpr auto &&b(this auto &&self) noexcept requires (N >= 3) {return EM_FWD(self).z;}
+        [[nodiscard]] EM_TINY constexpr auto &&a(this auto &&self) noexcept requires (N >= 4) {return EM_FWD(self).w;}
 
         // Returns i-th element.
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto &&operator[](this auto &&self, int i) noexcept
+        [[nodiscard]] EM_TINY constexpr auto &&operator[](this auto &&self, int i) noexcept
         {
             EM_ASSUME(i >= 0 && i < N);
             EM_IF_CONSTEVAL
@@ -217,19 +217,19 @@ namespace em::Math
         }
 
         // The sum of elements.
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto sum() EM_REQ_RETURNS(this->reduce(Ops::Add{}))
+        [[nodiscard]] EM_TINY constexpr auto sum() EM_REQ_RETURNS(this->reduce(Ops::Add{}))
         // The product of elements.
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto prod() EM_REQ_RETURNS(this->reduce(Ops::Mul{}))
+        [[nodiscard]] EM_TINY constexpr auto prod() EM_REQ_RETURNS(this->reduce(Ops::Mul{}))
 
         // Convert to shorter or longer vectors. When converting to a longer vector, either pass the missing components or they will be zeroed.
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr vec2<T> to_vec2(this auto &&self) requires (N > 2) {return vec2<T>(EM_FWD(self).x, EM_FWD(self).y);}
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr vec3<T> to_vec3(this auto &&self) requires (N > 3) {return vec3<T>(EM_FWD(self).x, EM_FWD(self).y, EM_FWD(self).z);}
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr vec3<T> to_vec3(this auto &&self, T z     ) requires (N == 2) {return vec3<T>(EM_FWD(self).x, EM_FWD(self).y, std::move(z));}
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr vec4<T> to_vec4(this auto &&self, T z, T w) requires (N == 2) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, std::move(z), std::move(w));}
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr vec4<T> to_vec4(this auto &&self,      T w) requires (N == 3) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, EM_FWD(self).z, std::move(w));}
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr vec3<T> to_vec3(this auto &&self) requires (N == 2) {return vec3<T>(EM_FWD(self).x, EM_FWD(self).y, T{});}
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr vec4<T> to_vec4(this auto &&self) requires (N == 2) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, T{}, T{});}
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr vec4<T> to_vec4(this auto &&self) requires (N == 3) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, EM_FWD(self).z, T{});}
+        [[nodiscard]] EM_TINY constexpr vec2<T> to_vec2(this auto &&self) requires (N > 2) {return vec2<T>(EM_FWD(self).x, EM_FWD(self).y);}
+        [[nodiscard]] EM_TINY constexpr vec3<T> to_vec3(this auto &&self) requires (N > 3) {return vec3<T>(EM_FWD(self).x, EM_FWD(self).y, EM_FWD(self).z);}
+        [[nodiscard]] EM_TINY constexpr vec3<T> to_vec3(this auto &&self, T z     ) requires (N == 2) {return vec3<T>(EM_FWD(self).x, EM_FWD(self).y, std::move(z));}
+        [[nodiscard]] EM_TINY constexpr vec4<T> to_vec4(this auto &&self, T z, T w) requires (N == 2) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, std::move(z), std::move(w));}
+        [[nodiscard]] EM_TINY constexpr vec4<T> to_vec4(this auto &&self,      T w) requires (N == 3) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, EM_FWD(self).z, std::move(w));}
+        [[nodiscard]] EM_TINY constexpr vec3<T> to_vec3(this auto &&self) requires (N == 2) {return vec3<T>(EM_FWD(self).x, EM_FWD(self).y, T{});}
+        [[nodiscard]] EM_TINY constexpr vec4<T> to_vec4(this auto &&self) requires (N == 2) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, T{}, T{});}
+        [[nodiscard]] EM_TINY constexpr vec4<T> to_vec4(this auto &&self) requires (N == 3) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, EM_FWD(self).z, T{});}
     };
 
     // The obvious deduction guide, using `larger_t`.
@@ -277,13 +277,9 @@ namespace em::Math
     }
 }
 
-// `using namespace` this to import some common names.
-namespace em
+// Expose `vec` and its typedefs into the `Common` namespace.
+namespace em::Math::inline Common
 {
-    namespace Math::Common
-    {
-        using Math::vec;
-        EM_MATH_IMPORT_TYPE_SHORTHANDS_VEC(Math::,vec)
-    }
-    using namespace Math::Common;
+    using Math::vec;
+    EM_MATH_IMPORT_TYPE_SHORTHANDS_VEC(Math::,vec)
 }

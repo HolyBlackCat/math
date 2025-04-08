@@ -22,6 +22,12 @@ namespace em::Math
                     return std::partial_ordering::less;
                 else if constexpr (floating_point_scalar<A> > floating_point_scalar<B>)
                     return std::partial_ordering::greater;
+                // Small unsigned integers are "less" than larger signed ones, because you can convert them losslessly: [
+                else if constexpr (unsigned_integral_scalar<A> && signed_integral_scalar<B> && sizeof(A) < sizeof(B))
+                    return std::partial_ordering::less;
+                else if constexpr (signed_integral_scalar<A> && unsigned_integral_scalar<B> && sizeof(A) > sizeof(B))
+                    return std::partial_ordering::greater;
+                // ]
                 else if constexpr (signed_integral_scalar<A> != signed_integral_scalar<B>)
                     return std::partial_ordering::unordered;
                 else if constexpr (sizeof(A) < sizeof(B))
