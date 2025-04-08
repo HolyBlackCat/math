@@ -6,7 +6,6 @@
 #include "em/macros/utils/returns.h"
 
 #include <functional>
-#include <utility>
 
 // This file defines functions to apply functions to vectors and vector-like types elementwise.
 
@@ -15,9 +14,13 @@ namespace em::Math
     // This a dummy ADL target, and a customization point for `apply_elementwise()` below.
     // When overriding this, it's important to reject the simplest `std::invoke(func, params...)` case,
     //   see `apply_elementwise_nontrivial()` below for explanation.
-    constexpr auto _adl_em_apply_elementwise() {}
+    // The customized versions of this must take a `<bool SameKind>` parameter. For example for vectors, if that's true,
+    //   you must reject `vector + scalar` and only allow `vector + vector`.
+    constexpr decltype(auto) _adl_em_apply_elementwise() {}
     // This version is given a functor that returns a bool (or a type that can be cast to one).
     // When the functor returns true, it returns that return value. Otherwise returns a default-constructed value of the same type.
+    // Must always return by value.
+    // The customized versions of this must take a `<bool SameKind>` parameter, same as `_adl_em_apply_elementwise()`.
     constexpr auto _adl_em_any_of_elementwise() {}
 
     // Takes N-ary functor and N arguments.
@@ -34,6 +37,7 @@ namespace em::Math
 
     // This version refuses to do `func(params...)`, and only accepts non-trivial cases (where e.g. vectors are involved).
     // This is useful to avoid circular `constraint satisfaction depends on itself`.
+    // There's no `requires` that ensures this, instead we simply don't provide a second overload that calls `std::invoke`.
     [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto apply_elementwise_nontrivial(auto &&func, auto &&... params) EM_RETURNS(_adl_em_apply_elementwise<false>(EM_FWD(func), EM_FWD(params)...))
     [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto apply_elementwise_same_kind_nontrivial(auto &&func, auto &&... params) EM_RETURNS(_adl_em_apply_elementwise<true>(EM_FWD(func), EM_FWD(params)...))
 

@@ -29,7 +29,14 @@ namespace em::Math::Ops
     namespace detail
     {
         template <typename T>
-        concept IsBuiltinScalar = std::is_arithmetic_v<std::decay_t<T>>;
+        concept BuiltinScalar = std::is_arithmetic_v<std::decay_t<T>>;
+
+        // Those scalars get promoted by the standard operators.
+        template <typename T>
+        concept BuiltinScalarSmall = BuiltinScalar<T> && sizeof(T) < sizeof(int);
+
+        template <typename T, typename U>
+        concept BothBuiltinScalarssAndAtLeastOneSmall = BuiltinScalar<T> && BuiltinScalar<U> && (BuiltinScalarSmall<T> || BuiltinScalarSmall<U>);
     }
 
     #define DETAIL_EM_X(name_, op_) \
@@ -40,7 +47,7 @@ namespace em::Math::Ops
             noexcept(noexcept(auto(op_ decltype(value)(value)))) \
             requires requires{auto(op_ decltype(value)(value));} \
             { \
-                if constexpr (detail::IsBuiltinScalar<T>) \
+                if constexpr (detail::BuiltinScalarSmall<T>) \
                     return std::decay_t<T>(op_ value); \
                 else \
                     return op_ decltype(value)(value); \
@@ -53,21 +60,17 @@ namespace em::Math::Ops
     {
         // Promote types smaller than `int` to `int` or `unsigned int`. Unlike standard promotion, this preserves the signedness.
         // This helps prevent UB overflow when multiplying two big `unsigned short`s.
-        template <typename T>
-        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto PromoteSameSign(T t)
+        template <BuiltinScalarSmall T>
+        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto PromoteSameSign(T &&t)
         {
-            if constexpr (sizeof(T) < sizeof(int))
-            {
-                if constexpr (std::is_signed_v<T>)
-                    return (int)t;
-                else
-                    return (unsigned int)t;
-            }
+            if constexpr (std::is_signed_v<std::remove_reference_t<T>>)
+                return (int)t;
             else
-            {
-                return t;
-            }
+                return (unsigned int)t;
         }
+        // The identity overload for types that don't need promoting.
+        template <typename T>
+        [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr T &&PromoteSameSign(T &&t) {return (T &&)t;}
 
         // Those disable operators on builtin scalars if they involve weird conversions.
 
@@ -86,7 +89,7 @@ namespace em::Math::Ops
             noexcept(noexcept(auto(decltype(t)(t) op_ decltype(u)(u)))) \
             requires requires{auto(decltype(t)(t) op_ decltype(u)(u));} \
             { \
-                if constexpr (detail::IsBuiltinScalar<T> && detail::IsBuiltinScalar<U>) \
+                if constexpr (detail::BothBuiltinScalarssAndAtLeastOneSmall<T, U>) \
                     return EM_CAT(DETAIL_EM_X_, __VA_ARGS__)(op_); \
                 else \
                     return decltype(t)(t) op_ decltype(u)(u); \
@@ -100,7 +103,7 @@ namespace em::Math::Ops
             noexcept(noexcept(t EM_CAT(op_,=) decltype(u)(u))) \
             requires requires{auto(t EM_CAT(op_,=) decltype(u)(u));} \
             { \
-                if constexpr (detail::IsBuiltinScalar<T> && detail::IsBuiltinScalar<U>) \
+                if constexpr (detail::BothBuiltinScalarssAndAtLeastOneSmall<T, U>) \
                     t = std::decay_t<T>(detail::PromoteSameSign(t) op_ detail::PromoteSameSign(u)); \
                 else \
                     t EM_CAT(op_,=) decltype(u)(u); \

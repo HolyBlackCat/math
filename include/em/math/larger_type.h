@@ -8,7 +8,7 @@
 
 namespace em::Math
 {
-    namespace Customize
+    namespace detail
     {
         // Which type is "larger" than another.
         template <Meta::cvref_unqualified A, Meta::cvref_unqualified B>
@@ -42,9 +42,9 @@ namespace em::Math
         {
             // The default implementation for the `LargerType` below. This is based on `Customize::compare_types_v`.
             template <Meta::cvref_unqualified A, Meta::cvref_unqualified B> struct LargerType {};
-            template <Meta::cvref_unqualified A, Meta::cvref_unqualified B> requires (compare_types_v<A, B> == std::partial_ordering::equivalent) struct LargerType<A, B> {using type = A;};
-            template <Meta::cvref_unqualified A, Meta::cvref_unqualified B> requires (compare_types_v<A, B> == std::partial_ordering::less      ) struct LargerType<A, B> {using type = B;};
-            template <Meta::cvref_unqualified A, Meta::cvref_unqualified B> requires (compare_types_v<A, B> == std::partial_ordering::greater   ) struct LargerType<A, B> {using type = A;};
+            template <Meta::cvref_unqualified A, Meta::cvref_unqualified B> requires (detail::compare_types_v<A, B> == std::partial_ordering::equivalent) struct LargerType<A, B> {using type = A;};
+            template <Meta::cvref_unqualified A, Meta::cvref_unqualified B> requires (detail::compare_types_v<A, B> == std::partial_ordering::less      ) struct LargerType<A, B> {using type = B;};
+            template <Meta::cvref_unqualified A, Meta::cvref_unqualified B> requires (detail::compare_types_v<A, B> == std::partial_ordering::greater   ) struct LargerType<A, B> {using type = A;};
         }
 
         // Select a larger type from the two. For vectors this can return a completely different type (float + ivec2 = fvec2).
