@@ -1,6 +1,6 @@
 #pragma once
 
-#include "em/macros/meta/eval.h"
+#include "em/macros/meta/codegen.h"
 #include "em/macros/portable/always_inline.h"
 #include "em/macros/portable/artificial.h"
 #include "em/macros/portable/assume.h"
@@ -12,6 +12,8 @@
 #include "em/meta/cvref.h"
 
 #include <utility>
+
+// This header is self-sufficient for vectors. The overloaded operators for vectors are included here too.
 
 namespace em::Math
 {
@@ -119,8 +121,8 @@ namespace em::Math
         template <typename T, int N, typename Derived> requires ValidSize<N>
         struct VectorMembers;
 
-        #define DETAIL_EM_VEC(N, seq) EM_EVAL( \
-            T EM_FOREACH_A(seq,(,))( EM_A0{} ); \
+        #define DETAIL_EM_VEC(N, seq, reduce_) \
+            T EM_CODEGEN(seq,(,), EM_1{} ); \
             [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL \
             constexpr VectorMembers() noexcept(std::is_nothrow_constructible_v<T>) {} \
             /* Construct elementwise: */ \
@@ -128,61 +130,47 @@ namespace em::Math
             /*   use the explicit notation anyway, and we want to disable narrowing conversions even in that case. */ \
             /* And it's easier to delegate the checking to the `-Wconversion` warnings than to do it ourselves. */ \
             [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL \
-            constexpr VectorMembers EM_P( EM_FOREACH_A(seq,(,))( T EM_A0 ) ) noexcept(std::is_nothrow_move_constructible_v<T>) \
-                : EM_FOREACH_A(seq,(,))( EM_A0 EM_P(std::move EM_P(EM_A0)) ) \
+            constexpr VectorMembers( EM_CODEGEN(seq,(,), T EM_1 ) ) noexcept(std::is_nothrow_move_constructible_v<T>) \
+                : EM_CODEGEN(seq,(,), EM_1 EM_P(std::move EM_P(EM_1)) ) \
             {} \
             /* Fill with the same element: */ \
             [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL explicit \
             constexpr VectorMembers(T n) noexcept(std::is_nothrow_copy_constructible_v<T> && std::is_nothrow_move_constructible_v<T>) \
-                : EM_FOREACH_A(seq,(,))( EM_A0 EM_P(EM_A1(n)) ) \
+                : EM_CODEGEN(seq,(,), EM_1 EM_P(EM_2_OPT(n)) ) \
             {} \
             /* Convert from a vector of another type: */ \
             template <typename U> requires(vec_size<U> == N) [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL explicit(!can_safely_convert<U, vec<T,N>>) \
             constexpr VectorMembers(U &&other) noexcept(std::is_nothrow_constructible_v<T, vec_base_cvref_t<U &&>>) requires std::is_constructible_v<T, vec_base_cvref_t<U>> \
-                : EM_FOREACH_A(seq,(,))( EM_A0 EM_P(std::move EM_P(other.EM_A0)) ) \
+                : EM_CODEGEN(seq,(,), EM_1 EM_P(T EM_P(std::forward_like<U> EM_P(other.EM_1))) ) \
             {} \
             /* Not using "deducing this" here because it prevents the use of this function in `EM_RETURNS()` in derived classes, */\
             /*   see: https://stackoverflow.com/q/79081096/2752075 */\
-            EM_MAYBE_CONST_LR_LOOP( \
+            EM_MAYBE_CONST_LR( \
                 /* Applies unary functor to each element, returns a new vector. */\
-                [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto map(auto &&f) EM_QUAL EM_RETURNS EM_P(rebind_to<std::decay_t<decltype EM_P(f EM_P(EM_FWD_SELF.x))>, Derived> EM_P(EM_FOREACH_A(seq,(,))( f EM_P(EM_FWD_SELF.EM_A0) ))) \
+                [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto map(auto &&f) EM_QUAL EM_RETURNS EM_P(rebind_to<std::decay_t<decltype EM_P(f EM_P(EM_FWD_SELF.x))>, Derived> EM_P(EM_CODEGEN(seq,(,), f EM_E(EM_LP EM_FWD_SELF).EM_1 EM_E(EM_RP) ))) \
                 /* Calls a function with all elements as parameters. */\
-                [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto apply(auto &&f) EM_QUAL EM_RETURNS EM_P(EM_FWD(f) EM_P(EM_FOREACH_A(seq,(,))( EM_FWD_SELF.EM_A0 ))) \
+                [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto apply(auto &&f) EM_QUAL EM_RETURNS EM_P(EM_FWD(f) EM_P(EM_CODEGEN(seq,(,), EM_E(EM_FWD_SELF).EM_1 ))) \
                 /* Change the element type. */\
                 template <Meta::cvref_unqualified U> requires(std::is_constructible_v<U, T>) \
-                [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto to() EM_QUAL EM_RETURNS EM_P(vec<U,N> EM_P(EM_FOREACH_A(seq,(,))( U EM_P(EM_FWD_SELF.EM_A0) ))) \
-            ) \
-        )
+                [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto to() EM_QUAL EM_RETURNS EM_P(vec<U,N> EM_P(EM_CODEGEN(seq,(,), U EM_E(EM_LP EM_FWD_SELF).EM_1 EM_E(EM_RP) ))) \
+                /* Reduces all elements over a binary function. */\
+                [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto reduce(auto &&f) EM_QUAL EM_RETURNS EM_P( EM_UNWRAP_CODE(reduce_) )\
+            )
 
         template <typename T, typename Derived>
         struct VectorMembers<T, 2, Derived>
         {
-            DETAIL_EM_VEC(2, (x,)(y,std::move))
-
-            EM_MAYBE_CONST_LR(
-                // Reduces all elements over a binary function.
-                [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto reduce(auto &&f) EM_QUAL EM_RETURNS EM_P(EM_FWD(f) EM_P(EM_FWD_SELF.x, EM_FWD_SELF.y))
-            )
+            DETAIL_EM_VEC(2, (x)(y,std::move), (EM_FWD(f) EM_P(EM_FWD_SELF.x, EM_FWD_SELF.y)))
         };
         template <typename T, typename Derived>
         struct VectorMembers<T, 3, Derived>
         {
-            DETAIL_EM_VEC(3, (x,)(y,)(z,std::move))
-
-            EM_MAYBE_CONST_LR(
-                // Reduces all elements over a binary function.
-                [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto reduce(auto &&f) EM_QUAL EM_RETURNS EM_P(f EM_P(EM_FWD_SELF.x, f EM_P(EM_FWD_SELF.y, EM_FWD_SELF.z)))
-            )
+            DETAIL_EM_VEC(3, (x)(y)(z,std::move), (f EM_P(EM_FWD_SELF.x, f EM_P(EM_FWD_SELF.y, EM_FWD_SELF.z))))
         };
         template <typename T, typename Derived>
         struct VectorMembers<T, 4, Derived>
         {
-            DETAIL_EM_VEC(4, (x,)(y,)(z,)(w,std::move))
-
-            EM_MAYBE_CONST_LR(
-                // Reduces all elements over a binary function.
-                [[nodiscard]] EM_ALWAYS_INLINE EM_ARTIFICIAL constexpr auto reduce(auto &&f) EM_QUAL EM_RETURNS EM_P(f EM_P(f EM_P(EM_FWD_SELF.x, EM_FWD_SELF.y), f EM_P(EM_FWD_SELF.z, EM_FWD_SELF.w)))
-            )
+            DETAIL_EM_VEC(4, (x)(y)(z)(w,std::move), (f EM_P(f EM_P(EM_FWD_SELF.x, EM_FWD_SELF.y), f EM_P(EM_FWD_SELF.z, EM_FWD_SELF.w))))
         };
     }
 
