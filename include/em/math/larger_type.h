@@ -1,6 +1,6 @@
 #pragma once
 
-#include "em/math/concepts_scalar.h"
+#include "em/math/scalar.h"
 #include "em/meta/cvref.h"
 #include "em/meta/reduce.h"
 
@@ -22,12 +22,10 @@ namespace em::Math
                     return std::partial_ordering::less;
                 else if constexpr (floating_point_scalar<A> > floating_point_scalar<B>)
                     return std::partial_ordering::greater;
-                // Small unsigned integers are "less" than larger signed ones, because you can convert them losslessly: [
-                else if constexpr (unsigned_integral_scalar<A> && signed_integral_scalar<B> && sizeof(A) < sizeof(B))
-                    return std::partial_ordering::less;
-                else if constexpr (signed_integral_scalar<A> && unsigned_integral_scalar<B> && sizeof(A) > sizeof(B))
-                    return std::partial_ordering::greater;
-                // ]
+                // We could do something funny here with making `unsigned short` smaller than `int`,
+                //   but that creates issues because `larger_t<...>` stops being order-independent with this.
+                // Instead a proper fix would be to do this: if one type is unsigned and another is unsigned,
+                //   the unsigned one is replaced with the next larger signed, and then the normal procedure follows.
                 else if constexpr (signed_integral_scalar<A> != signed_integral_scalar<B>)
                     return std::partial_ordering::unordered;
                 else if constexpr (sizeof(A) < sizeof(B))

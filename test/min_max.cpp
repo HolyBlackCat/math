@@ -27,10 +27,15 @@ static_assert(em::min(30, 20, 40, 10) == 10);
 // Strings?
 static_assert(em::min(std::string("b"), std::string("a")) == "a");
 
+static_assert(em::Math::any_of_elementwise<em::Math::ApplyElementwiseFlags::nontrivial>([](int,int){return true;}, em::ivec3(1,2,3), em::ivec3(1,2,2)));
 
 // Vectors.
 static_assert(em::min(em::ivec3(1,2,3), 2) == em::ivec3(1,2,2));
 static_assert(em::max(em::ivec3(1,2,3), 2) == em::ivec3(2,2,3));
+
+// Higher-order fun.
+static_assert(em::min(em::vec2<em::ivec2>(em::ivec2(1,2), em::ivec2(3,4)), 2) == em::vec2<em::ivec2>(em::ivec2(1,2), em::ivec2(2,2)));
+static_assert(em::max(em::vec2<em::ivec2>(em::ivec2(1,2), em::ivec2(3,4)), 2) == em::vec2<em::ivec2>(em::ivec2(2,2), em::ivec2(3,4)));
 
 static_assert(std::is_same_v<decltype(em::min(em::ivec3(1,2,3), 2)), em::ivec3>);
 static_assert(std::is_same_v<decltype(em::min(em::ivec3(1,2,3), 2.f)), em::fvec3>);
@@ -43,9 +48,3 @@ namespace
 
 static_assert(!CanEmMin<em::ivec3, em::ivec2>);
 static_assert(!CanEmMin<em::ivec3, unsigned>);
-
-// Small integers?
-static_assert(!CanEmMin<em::ivec3, unsigned long long>);
-static_assert(!CanEmMin<em::ivec3, unsigned int>);
-// This works, because the conversion is lossless.
-static_assert(std::is_same_v<decltype(em::min(em::ivec3(1,2,3), (unsigned short)2)), em::ivec3>);

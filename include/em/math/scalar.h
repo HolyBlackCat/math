@@ -1,5 +1,7 @@
 #pragma once
 
+#include "em/macros/portable/tiny_func.h"
+#include "em/macros/utils/returns.h"
 #include "em/meta/cvref.h"
 
 #include <concepts>
@@ -32,4 +34,13 @@ namespace em::Math
 
     template <typename T> concept scalar_cvref = integral_scalar_cvref<T> || floating_point_scalar_cvref<T>;
     template <typename T> concept scalar = integral_scalar<T> || floating_point_scalar<T>;
+
+
+    // What value to use when we prefer a `1`, but don't really care if it's not either.
+    // Such as what to put as the `.w` when calling `.to_vec4()` on a vector.
+    // By default this is `T(1)` if that compiles, otherwise `T{}`.
+    template <scalar T>
+    [[nodiscard]] EM_TINY constexpr auto OneIfScalar() EM_RETURNS(T(1))
+    template <Meta::cvref_unqualified T>
+    [[nodiscard]] EM_TINY constexpr auto OneIfScalar() EM_RETURNS(T{})
 }

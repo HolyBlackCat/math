@@ -45,12 +45,12 @@ static_assert(em::Math::fvec4(1.8f,2.1f,3,4).to<int>() == em::Math::ivec4(1,2,3,
 // `.to_vecN()`
 
 static_assert(em::ivec2(10,20).to_vec3() == em::ivec3(10,20,0));
-static_assert(em::ivec2(10,20).to_vec4() == em::ivec4(10,20,0,0));
+static_assert(em::ivec2(10,20).to_vec4() == em::ivec4(10,20,0,1));
 static_assert(em::ivec2(10,20).to_vec3(30) == em::ivec3(10,20,30));
 static_assert(em::ivec2(10,20).to_vec4(30,40) == em::ivec4(10,20,30,40));
 
 static_assert(em::ivec3(10,20,30).to_vec2() == em::ivec2(10,20));
-static_assert(em::ivec3(10,20,30).to_vec4() == em::ivec4(10,20,30,0));
+static_assert(em::ivec3(10,20,30).to_vec4() == em::ivec4(10,20,30,1));
 static_assert(em::ivec3(10,20,30).to_vec4(40) == em::ivec4(10,20,30,40));
 
 static_assert(em::ivec4(10,20,30,40).to_vec2() == em::ivec2(10,20));

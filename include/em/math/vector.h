@@ -5,8 +5,10 @@
 #include "em/macros/portable/if_consteval.h"
 #include "em/macros/portable/tiny_func.h"
 #include "em/macros/utils/cvref.h"
+#include "em/math/min_max.h"
 #include "em/math/namespaces.h"
 #include "em/math/rebind.h"
+#include "em/math/scalar.h"
 #include "em/math/type_shorthands.h"
 #include "em/math/vector_operators.h"
 #include "em/meta/cvref.h"
@@ -136,7 +138,7 @@ namespace em::Math
             /* Fill with the same element: */ \
             [[nodiscard]] EM_TINY explicit \
             constexpr VectorMembers(T n) noexcept(std::is_nothrow_copy_constructible_v<T> && std::is_nothrow_move_constructible_v<T>) \
-                : EM_CODEGEN(seq,(,), EM_1 EM_P(EM_2_OPT(n)) ) \
+                : EM_CODEGEN(seq,(,), EM_1 EM_P(EM_3_OPT(n)) ) \
             {} \
             /* Convert from a vector of another type: */ \
             template <typename U> requires(vec_size<U> == N) [[nodiscard]] EM_TINY explicit(!can_safely_convert<U, vec<T,N>>) \
@@ -155,22 +157,27 @@ namespace em::Math
                 [[nodiscard]] EM_TINY constexpr auto to() EM_QUAL EM_RETURNS EM_P(vec<U,N> EM_P(EM_CODEGEN(seq,(,), U EM_E(EM_LP EM_FWD_SELF).EM_1 EM_E(EM_RP) ))) \
                 /* Reduces all elements over a binary function. */\
                 [[nodiscard]] EM_TINY constexpr auto reduce(auto &&f) EM_QUAL EM_RETURNS EM_P( EM_UNWRAP_CODE(reduce_) )\
+            ) \
+            /* RGBA-style member accessors. They are here instead of `Vector` because disabling them with `requires` */\
+            /* still shows them in the code completion, and that looks a big ugly. */\
+            EM_CODEGEN(seq,, \
+                [[nodiscard]] EM_TINY constexpr auto &&EM_2(this auto &&self) noexcept {return EM_FWD(self).EM_1;} \
             )
 
         template <typename T, typename Derived>
         struct VectorMembers<T, 2, Derived>
         {
-            DETAIL_EM_VEC(2, (x)(y,std::move), (EM_FWD(f) EM_P(EM_FWD_SELF.x, EM_FWD_SELF.y)))
+            DETAIL_EM_VEC(2, (x,r)(y,g,std::move), (EM_FWD(f) EM_P(EM_FWD_SELF.x, EM_FWD_SELF.y)))
         };
         template <typename T, typename Derived>
         struct VectorMembers<T, 3, Derived>
         {
-            DETAIL_EM_VEC(3, (x)(y)(z,std::move), (f EM_P(EM_FWD_SELF.x, f EM_P(EM_FWD_SELF.y, EM_FWD_SELF.z))))
+            DETAIL_EM_VEC(3, (x,r)(y,g)(z,b,std::move), (f EM_P(EM_FWD_SELF.x, f EM_P(EM_FWD_SELF.y, EM_FWD_SELF.z))))
         };
         template <typename T, typename Derived>
         struct VectorMembers<T, 4, Derived>
         {
-            DETAIL_EM_VEC(4, (x)(y)(z)(w,std::move), (f EM_P(f EM_P(EM_FWD_SELF.x, EM_FWD_SELF.y), f EM_P(EM_FWD_SELF.z, EM_FWD_SELF.w))))
+            DETAIL_EM_VEC(4, (x,r)(y,g)(z,b)(w,a,std::move), (f EM_P(f EM_P(EM_FWD_SELF.x, EM_FWD_SELF.y), f EM_P(EM_FWD_SELF.z, EM_FWD_SELF.w))))
         };
     }
 
@@ -190,12 +197,7 @@ namespace em::Math
         // map(f) // apply unary functor, return a new vector
         // apply(f) // apply N-ary functor, return the result
         // reduce(f) // reduce over binary functor
-
-        // RGBA-style member accessors.
-        [[nodiscard]] EM_TINY constexpr auto &&r(this auto &&self) noexcept                   {return EM_FWD(self).x;}
-        [[nodiscard]] EM_TINY constexpr auto &&g(this auto &&self) noexcept                   {return EM_FWD(self).y;}
-        [[nodiscard]] EM_TINY constexpr auto &&b(this auto &&self) noexcept requires (N >= 3) {return EM_FWD(self).z;}
-        [[nodiscard]] EM_TINY constexpr auto &&a(this auto &&self) noexcept requires (N >= 4) {return EM_FWD(self).w;}
+        // r(),g(),b(),a() // member accessors with different names
 
         // Returns i-th element.
         [[nodiscard]] EM_TINY constexpr auto &&operator[](this auto &&self, int i) noexcept
@@ -217,19 +219,23 @@ namespace em::Math
         }
 
         // The sum of elements.
-        [[nodiscard]] EM_TINY constexpr auto sum() EM_REQ_RETURNS(this->reduce(Ops::Add{}))
+        [[nodiscard]] EM_TINY constexpr auto sum() EM_SOFT_RETURNS(this->reduce(Ops::Add{}))
         // The product of elements.
-        [[nodiscard]] EM_TINY constexpr auto prod() EM_REQ_RETURNS(this->reduce(Ops::Mul{}))
+        [[nodiscard]] EM_TINY constexpr auto prod() EM_SOFT_RETURNS(this->reduce(Ops::Mul{}))
+
+        // Min/max of all elements.
+        [[nodiscard]] EM_TINY constexpr auto min() EM_SOFT_RETURNS(this->apply(Math::min))
+        [[nodiscard]] EM_TINY constexpr auto max() EM_SOFT_RETURNS(this->apply(Math::max))
 
         // Convert to shorter or longer vectors. When converting to a longer vector, either pass the missing components or they will be zeroed.
         [[nodiscard]] EM_TINY constexpr vec2<T> to_vec2(this auto &&self) requires (N > 2) {return vec2<T>(EM_FWD(self).x, EM_FWD(self).y);}
         [[nodiscard]] EM_TINY constexpr vec3<T> to_vec3(this auto &&self) requires (N > 3) {return vec3<T>(EM_FWD(self).x, EM_FWD(self).y, EM_FWD(self).z);}
         [[nodiscard]] EM_TINY constexpr vec3<T> to_vec3(this auto &&self, T z     ) requires (N == 2) {return vec3<T>(EM_FWD(self).x, EM_FWD(self).y, std::move(z));}
-        [[nodiscard]] EM_TINY constexpr vec4<T> to_vec4(this auto &&self, T z, T w) requires (N == 2) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, std::move(z), std::move(w));}
+        [[nodiscard]] EM_TINY constexpr vec4<T> to_vec4(this auto &&self, T z, T w) requires (N == 2) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, std::move(z),   std::move(w));}
         [[nodiscard]] EM_TINY constexpr vec4<T> to_vec4(this auto &&self,      T w) requires (N == 3) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, EM_FWD(self).z, std::move(w));}
         [[nodiscard]] EM_TINY constexpr vec3<T> to_vec3(this auto &&self) requires (N == 2) {return vec3<T>(EM_FWD(self).x, EM_FWD(self).y, T{});}
-        [[nodiscard]] EM_TINY constexpr vec4<T> to_vec4(this auto &&self) requires (N == 2) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, T{}, T{});}
-        [[nodiscard]] EM_TINY constexpr vec4<T> to_vec4(this auto &&self) requires (N == 3) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, EM_FWD(self).z, T{});}
+        [[nodiscard]] EM_TINY constexpr vec4<T> to_vec4(this auto &&self) requires (N == 2) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, T{},            (OneIfScalar<T>)());}
+        [[nodiscard]] EM_TINY constexpr vec4<T> to_vec4(this auto &&self) requires (N == 3) {return vec4<T>(EM_FWD(self).x, EM_FWD(self).y, EM_FWD(self).z, (OneIfScalar<T>)());}
     };
 
     // The obvious deduction guide, using `larger_t`.
