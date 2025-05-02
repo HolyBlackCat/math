@@ -84,7 +84,10 @@ namespace em::Math
             {
                 F func;
 
-                [[nodiscard]] EM_TINY constexpr auto operator()(this auto &&self, auto &&... params) EM_RETURNS(std::invoke(EM_FWD(self).func, EM_FWD(params)...))
+                // Note: Here and below `EM_FWD(self.func)` is intentional, as opposed to `EM_FWD(self).func`, because the latter doesn't respect
+                //   `func` being an rvalue reference, and we don't really care about `self` being rvalue or not.
+
+                [[nodiscard]] EM_TINY constexpr auto operator()(this auto &&self, auto &&... params) EM_RETURNS(std::invoke(EM_FWD(self.func), EM_FWD(params)...))
                 [[nodiscard]] EM_TINY constexpr auto operator()(this auto &&self, auto &&... params) EM_RETURNS EM_P(EM_2<SameKind>(EM_FWD(self), EM_FWD(params)...))
             };
 
@@ -97,8 +100,8 @@ namespace em::Math
               public:
                 F func;
 
-                [[nodiscard]] EM_TINY constexpr auto operator()(this auto &&self, auto &&... params) EM_RETURNS_REQ(!nontrivial, std::invoke(EM_FWD(self).func, EM_FWD(params)...))
-                [[nodiscard]] EM_TINY constexpr auto operator()(this auto &&self, auto &&... params) EM_RETURNS EM_P(EM_CAT EM_P(EM_1, _Simple)<F, same_kind>{EM_FWD(self)}(EM_FWD(params)...))
+                [[nodiscard]] EM_TINY constexpr auto operator()(this auto &&self, auto &&... params) EM_RETURNS_REQ(!nontrivial, std::invoke(EM_FWD(self.func), EM_FWD(params)...))
+                [[nodiscard]] EM_TINY constexpr auto operator()(this auto &&self, auto &&... params) EM_RETURNS EM_P(EM_CAT EM_P(EM_1, _Simple)<F, same_kind>{EM_FWD(self.func)}(EM_FWD(params)...))
             };
         )
     }

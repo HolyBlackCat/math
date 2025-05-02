@@ -82,4 +82,32 @@ static_assert(!CanB<em::ivec3, const char *>);
 static_assert(em::Math::apply_elementwise([](int x, int y){return x + y;}, 10, 20) == 30);
 static_assert(em::Math::apply_elementwise([](int x, int y){return x + y;}, em::ivec3(1,2,3), 10).y == 12);
 static_assert(em::Math::apply_elementwise([](int x, int y){return x + y;}, em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10).x.y == 12);
-#error fix those ^
+
+static auto l1 = [](int x, int y){return x + y;};
+static_assert(em::Math::apply_elementwise(l1, 10, 20) == 30);
+static_assert(em::Math::apply_elementwise(l1, em::ivec3(1,2,3), 10).y == 12);
+static_assert(em::Math::apply_elementwise(l1, em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10).x.y == 12);
+
+
+// `any_of_elementwise`:
+
+static_assert(em::Math::apply_elementwise([](int x, int y){return x + y;}, 10, 20) == 30);
+static_assert(em::Math::apply_elementwise([](int x, int y){return x + y;}, em::ivec3(1,2,3), 10).y == 12);
+static_assert(em::Math::apply_elementwise([](int x, int y){return x + y;}, em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10).x.y == 12);
+
+static auto l2 = [](int x, int y){return x == y;};
+static_assert(em::Math::any_of_elementwise(l2, 10, 20) == false);
+static_assert(em::Math::any_of_elementwise(l2, 10, 10) == true);
+static_assert(em::Math::any_of_elementwise(l2, em::ivec3(1,2,3), 10) == false);
+static_assert(em::Math::any_of_elementwise(l2, em::ivec3(1,2,3), 2) == true);
+static_assert(em::Math::any_of_elementwise(l2, em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10) == false);
+static_assert(em::Math::any_of_elementwise(l2, em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 2) == true);
+static_assert(em::Math::any_of_elementwise(l2, em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 5) == true);
+
+static_assert(std::is_same_v<bool, decltype(em::Math::any_of_elementwise(l2, 10, 20))>);
+static_assert(std::is_same_v<bool, decltype(em::Math::any_of_elementwise(l2, 10, 10))>);
+static_assert(std::is_same_v<bool, decltype(em::Math::any_of_elementwise(l2, em::ivec3(1,2,3), 10) == false)>);
+static_assert(std::is_same_v<bool, decltype(em::Math::any_of_elementwise(l2, em::ivec3(1,2,3), 2) == true)>);
+static_assert(std::is_same_v<bool, decltype(em::Math::any_of_elementwise(l2, em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10) == false)>);
+static_assert(std::is_same_v<bool, decltype(em::Math::any_of_elementwise(l2, em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 2) == true)>);
+static_assert(std::is_same_v<bool, decltype(em::Math::any_of_elementwise(l2, em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 5) == true)>);
