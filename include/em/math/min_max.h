@@ -37,8 +37,6 @@ namespace em::Math
     template <bool IsMax>
     struct FnMinMax
     {
-        EM_APPLICABLE_ELEMENTWISE
-
         // One argument -> return as is by value.
         // This verison accepts types that are not comparable too. Primarily to support vectors. We could check for single-argument `apply_elementwise()`, but who cares.
         // Maybe it is actually better to continue allowing this to support types that don't have `apply_elementwise()`.
@@ -58,8 +56,8 @@ namespace em::Math
         template <detail::MinMax::Comparable A, detail::MinMax::Comparable B, detail::MinMax::Comparable C, detail::MinMax::Comparable ...D>
         [[nodiscard]] EM_TINY constexpr auto operator()(A &&a, B &&b, C &&c, D &&... d) const EM_RETURNS((*this)(EM_FWD(a), (*this)(EM_FWD(b), EM_FWD(c), EM_FWD(d)...)))
     };
-    inline constexpr FnMinMax<false> min;
-    inline constexpr FnMinMax<true> max;
+    inline constexpr MakeElementwise<FnMinMax<false>> min;
+    inline constexpr MakeElementwise<FnMinMax<true>> max;
 
     inline namespace Common
     {

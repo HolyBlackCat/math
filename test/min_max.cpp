@@ -27,8 +27,6 @@ static_assert(em::min(30, 20, 40, 10) == 10);
 // Strings?
 static_assert(em::min(std::string("b"), std::string("a")) == "a");
 
-static_assert(em::Math::any_of_elementwise<em::Math::ApplyElementwiseFlags::nontrivial>([](int,int){return true;}, em::ivec3(1,2,3), em::ivec3(1,2,2)));
-
 // Vectors.
 static_assert(em::min(em::ivec3(1,2,3), 2) == em::ivec3(1,2,2));
 static_assert(em::max(em::ivec3(1,2,3), 2) == em::ivec3(2,2,3));

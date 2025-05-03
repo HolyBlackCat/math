@@ -9,34 +9,33 @@ namespace
 {
     struct A
     {
-        EM_APPLICABLE_ELEMENTWISE
-
-        constexpr int operator()(int x, int y) {return x + y;}
+        constexpr int operator()(int x, int y) const {return x + y;}
     };
+    constexpr em::Math::MakeElementwise<A> a{};
 }
 
-static_assert(A{}(10, 20) == 30);
+static_assert(a(10, 20) == 30);
 
-static_assert(std::is_same_v<decltype(A{}(em::ivec3(1,2,3), 10)), em::ivec3>);
-static_assert(A{}(em::ivec3(1,2,3), 10).x == 11);
-static_assert(A{}(em::ivec3(1,2,3), 10).y == 12);
-static_assert(A{}(em::ivec3(1,2,3), 10).z == 13);
+static_assert(std::is_same_v<decltype(a(em::ivec3(1,2,3), 10)), em::ivec3>);
+static_assert(a(em::ivec3(1,2,3), 10).x == 11);
+static_assert(a(em::ivec3(1,2,3), 10).y == 12);
+static_assert(a(em::ivec3(1,2,3), 10).z == 13);
 
-static_assert(std::is_same_v<decltype(A{}(em::ivec3(1,2,3), em::ivec3(10,20,30))), em::ivec3>);
-static_assert(A{}(em::ivec3(1,2,3), em::ivec3(10,20,30)).x == 11);
-static_assert(A{}(em::ivec3(1,2,3), em::ivec3(10,20,30)).y == 22);
-static_assert(A{}(em::ivec3(1,2,3), em::ivec3(10,20,30)).z == 33);
+static_assert(std::is_same_v<decltype(a(em::ivec3(1,2,3), em::ivec3(10,20,30))), em::ivec3>);
+static_assert(a(em::ivec3(1,2,3), em::ivec3(10,20,30)).x == 11);
+static_assert(a(em::ivec3(1,2,3), em::ivec3(10,20,30)).y == 22);
+static_assert(a(em::ivec3(1,2,3), em::ivec3(10,20,30)).z == 33);
 
-static_assert(std::is_same_v<decltype(A{}(em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10)), em::vec2<em::ivec3>>);
-static_assert(A{}(em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10).x.x == 11);
-static_assert(A{}(em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10).x.y == 12);
-static_assert(A{}(em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10).x.z == 13);
-static_assert(A{}(em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10).y.x == 14);
-static_assert(A{}(em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10).y.y == 15);
-static_assert(A{}(em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10).y.z == 16);
+static_assert(std::is_same_v<decltype(a(em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10)), em::vec2<em::ivec3>>);
+static_assert(a(em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10).x.x == 11);
+static_assert(a(em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10).x.y == 12);
+static_assert(a(em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10).x.z == 13);
+static_assert(a(em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10).y.x == 14);
+static_assert(a(em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10).y.y == 15);
+static_assert(a(em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10).y.z == 16);
 
 template <typename T, typename U>
-concept CanA = requires{A{}(std::declval<T>(), std::declval<U>());};
+concept CanA = requires{a(std::declval<T>(), std::declval<U>());};
 
 static_assert(CanA<int, int>);
 static_assert(CanA<em::ivec3, int>);
@@ -50,21 +49,20 @@ namespace
 {
     struct B
     {
-        EM_APPLICABLE_ELEMENTWISE_SAME_KIND
-
-        constexpr int operator()(int x, int y) {return x + y;}
+        constexpr int operator()(int x, int y) const {return x + y;}
     };
+    constexpr em::Math::MakeElementwiseSameKind<B> b{};
 }
 
-static_assert(B{}(10, 20) == 30);
+static_assert(b(10, 20) == 30);
 
-static_assert(std::is_same_v<decltype(B{}(em::ivec3(1,2,3), em::ivec3(10,20,30))), em::ivec3>);
-static_assert(B{}(em::ivec3(1,2,3), em::ivec3(10,20,30)).x == 11);
-static_assert(B{}(em::ivec3(1,2,3), em::ivec3(10,20,30)).y == 22);
-static_assert(B{}(em::ivec3(1,2,3), em::ivec3(10,20,30)).z == 33);
+static_assert(std::is_same_v<decltype(b(em::ivec3(1,2,3), em::ivec3(10,20,30))), em::ivec3>);
+static_assert(b(em::ivec3(1,2,3), em::ivec3(10,20,30)).x == 11);
+static_assert(b(em::ivec3(1,2,3), em::ivec3(10,20,30)).y == 22);
+static_assert(b(em::ivec3(1,2,3), em::ivec3(10,20,30)).z == 33);
 
 template <typename T, typename U>
-concept CanB = requires{B{}(std::declval<T>(), std::declval<U>());};
+concept CanB = requires{b(std::declval<T>(), std::declval<U>());};
 
 static_assert(CanB<int, int>);
 static_assert(CanB<em::ivec3, em::fvec3>); // Different element types are allowed.
@@ -75,6 +73,20 @@ static_assert(!CanB<em::vec2<em::ivec3>, em::ivec2>); // Structure mismatch, int
 static_assert(!CanB<int, const char *>);
 static_assert(!CanB<em::ivec3, const char *>);
 
+
+// Make sure the direct application of the function is preferred:
+
+namespace
+{
+    struct C
+    {
+        constexpr bool operator()(int, int) const {return false;}
+        constexpr bool operator()(auto &&...) const {return true;}
+    };
+    constexpr em::Math::MakeElementwise<C> c{};
+}
+
+static_assert(c(em::Math::ivec3(1,2,3), em::Math::ivec3(4,5,6)));
 
 
 // --- Functions:
@@ -111,3 +123,22 @@ static_assert(std::is_same_v<bool, decltype(em::Math::any_of_elementwise(l2, em:
 static_assert(std::is_same_v<bool, decltype(em::Math::any_of_elementwise(l2, em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 10) == false)>);
 static_assert(std::is_same_v<bool, decltype(em::Math::any_of_elementwise(l2, em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 2) == true)>);
 static_assert(std::is_same_v<bool, decltype(em::Math::any_of_elementwise(l2, em::vec2(em::ivec3(1,2,3), em::ivec3(4,5,6)), 5) == true)>);
+
+
+// Make sure the `nontrivial` flag isn't broken:
+
+static_assert(em::Math::any_of_elementwise<em::Math::ApplyElementwiseFlags::nontrivial>([](int,int){return true;}, em::ivec3(1,2,3), em::ivec3(1,2,2)));
+
+namespace
+{
+    template <em::Math::ApplyElementwiseFlags Flags, typename ...P>
+    concept CanAnyOfElementwise = requires{em::Math::any_of_elementwise<Flags>(std::declval<P>()...);};
+}
+
+[[maybe_unused]] static auto l3 = [](int, int){return true;};
+static_assert( CanAnyOfElementwise<em::Math::ApplyElementwiseFlags::nontrivial, decltype(l3), em::ivec3, em::ivec3>);
+static_assert( CanAnyOfElementwise<em::Math::ApplyElementwiseFlags::nontrivial, decltype(l3), em::ivec3, int>);
+static_assert(!CanAnyOfElementwise<em::Math::ApplyElementwiseFlags::nontrivial, decltype(l3), int, int>);
+static_assert( CanAnyOfElementwise<em::Math::ApplyElementwiseFlags::nontrivial | em::Math::ApplyElementwiseFlags::same_kind, decltype(l3), em::ivec3, em::ivec3>);
+static_assert(!CanAnyOfElementwise<em::Math::ApplyElementwiseFlags::nontrivial | em::Math::ApplyElementwiseFlags::same_kind, decltype(l3), em::ivec3, int>);
+static_assert(!CanAnyOfElementwise<em::Math::ApplyElementwiseFlags::nontrivial | em::Math::ApplyElementwiseFlags::same_kind, decltype(l3), int, int>);
