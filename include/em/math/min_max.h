@@ -7,8 +7,7 @@
 #include "em/math/apply_elementwise.h"
 #include "em/math/larger_type.h"
 #include "em/math/namespaces.h"
-#include "em/meta/cvref.h"
-#include "em/meta/deduce.h"
+#include "em/meta/common.h"
 
 #include <concepts>
 

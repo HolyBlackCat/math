@@ -60,7 +60,7 @@ namespace em::Math::Ops
         // Promote types smaller than `int` to `int` or `unsigned int`. Unlike standard promotion, this preserves the signedness.
         // This helps prevent UB overflow when multiplying two big `unsigned short`s.
         template <BuiltinScalarSmall T>
-        [[nodiscard]] EM_TINY constexpr auto PromoteSameSign(T &&t)
+        [[nodiscard]] EM_TINY constexpr auto PromoteSameSign(T &&t) noexcept
         {
             if constexpr (std::is_signed_v<std::remove_reference_t<T>>)
                 return (int)t;
@@ -69,7 +69,7 @@ namespace em::Math::Ops
         }
         // The identity overload for types that don't need promoting.
         template <typename T>
-        [[nodiscard]] EM_TINY constexpr T &&PromoteSameSign(T &&t) {return (T &&)t;}
+        [[nodiscard]] EM_TINY constexpr T &&PromoteSameSign(T &&t) noexcept {return (T &&)t;}
 
         // Those disable operators on builtin scalars if they involve weird conversions.
 

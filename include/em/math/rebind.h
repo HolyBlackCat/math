@@ -1,7 +1,6 @@
 #pragma once
 
-#include "em/meta/cvref.h"
-#include "em/meta/packs.h"
+#include "em/meta/common.h"
 
 namespace em::Math
 {
