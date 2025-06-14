@@ -6,7 +6,7 @@
 #include "em/macros/utils/returns.h"
 #include "em/math/apply_elementwise.h"
 #include "em/math/operator_functors.h"
-#include "em/meta/tags.h"
+#include "em/meta/common.h"
 
 namespace em::Math::VectorOps
 {
