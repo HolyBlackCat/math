@@ -35,6 +35,12 @@ namespace em::Math
     template <typename T> concept scalar_cvref = integral_scalar_cvref<T> || floating_point_scalar_cvref<T>;
     template <typename T> concept scalar = integral_scalar<T> || floating_point_scalar<T>;
 
+    // Integral scalars of a specific bit width.
+    template <typename T, int NumBits> concept signed_scalar_cvref_bits = signed_integral_scalar_cvref<T> && sizeof(T) * 8 == NumBits;
+    template <typename T, int NumBits> concept signed_scalar_bits = signed_integral_scalar<T> && sizeof(T) * 8 == NumBits;
+    template <typename T, int NumBits> concept unsigned_scalar_cvref_bits = unsigned_integral_scalar_cvref<T> && sizeof(T) * 8 == NumBits;
+    template <typename T, int NumBits> concept unsigned_scalar_bits = unsigned_integral_scalar<T> && sizeof(T) * 8 == NumBits;
+
 
     // What value to use when we prefer a `1`, but don't really care if it's not either.
     // Such as what to put as the `.w` when calling `.to_vec4()` on a vector.
