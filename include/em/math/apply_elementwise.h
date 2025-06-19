@@ -4,20 +4,23 @@
 #include "em/macros/portable/tiny_func.h"
 #include "em/macros/utils/flag_enum.h"
 #include "em/macros/utils/forward.h"
+#include "em/macros/utils/functors.h"
 #include "em/macros/utils/returns.h"
 #include "em/meta/casts.h"
 #include "em/meta/functional.h"
 
 // This file defines helpers to apply functions to vectors and vector-like types elementwise.
 //
-// The two primary usages are:
-//   1. Making a functor class and wrapping it with `em::Math::MakeElementwise[SameKind]<YourType>()`.
-//   2. Calling `apply_elementwise()` or `any_of_elementwise()`.
+// The primary usages are:
+//  1. Making a functor class:
+//      1.1 Using `EM_SIMPLE_ELEMENTWISE[_SAME_KIND]_FUNCTOR()`, which is a modified version of the normal `EM_SIMPLE_FUNCTOR()`.
+//      1.2 Wrapping your functor class with `em::Math::MakeElementwise[SameKind]`.
+//  2. Calling `apply_elementwise()` or `any_of_elementwise()`.
 //
-// The first approach doesn't expose the "any of" variant.
-// The first approach is recommended for library functions.
+// (1) doesn't expose the "any of" variant.
+// (1.1) is recommended for library functions, or at least (1.2).
 //
-// I initially wanted to acheive (1) by creating macros that can be added to functors, but that doesn'y really work, because the macros (or wrappers)
+// I initially wanted to acheive (1.2) by creating macros that can be added to functors, but that doesn'y really work, because the macros (or wrappers)
 //   first need to check that the function isn't applicable directly, and only then apply it elementwise.
 // Checking this appears to be impossible with a macro. We need a wrapper functor that inherits from the user functor that it wraps.
 //
@@ -105,3 +108,17 @@ namespace em::Math
     template <ApplyElementwiseFlags Flags = {}>
     [[nodiscard]] EM_TINY constexpr auto any_of_elementwise(auto &&func, auto &&... params) EM_RETURNS(AnyOfElementwiseFn<decltype(Meta::ToFunctorObject<Meta::ToFunctorFlags::ref>(EM_FWD(func))), Flags>{Meta::ToFunctorObject<Meta::ToFunctorFlags::ref>(EM_FWD(func))}(EM_FWD(params)...))
 }
+
+// Like `EM_SIMPLE_FUNCTOR()`, but can also act elementwise.
+#define EM_SIMPLE_ELEMENTWISE_FUNCTOR(name_, ...) EM_SIMPLE_ELEMENTWISE_FUNCTOR_EXT(name_, (), (EM_1), __VA_ARGS__)
+
+// Like `EM_SIMPLE_FUNCTOR()`, but can also act elementwise (only on the same kind of objects).
+#define EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR(name_, ...) EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR_EXT(name_, (), (EM_1), __VA_ARGS__)
+
+// The extended version of `EM_SIMPLE_ELEMENTWISE_FUNCTOR()`, see `EM_SIMPLE_FUNCTOR_EXT()`. This is primarily for making templates.
+#define EM_SIMPLE_ELEMENTWISE_FUNCTOR_EXT(name_, _template_head_, type_pattern_, ...) \
+    EM_SIMPLE_FUNCTOR_EXT(name_, _template_head_, (::em::Math::MakeElementwise<EM_UNWRAP_CODE(type_pattern_)>), __VA_ARGS__)
+
+// The extended version of `EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR()`, see `EM_SIMPLE_FUNCTOR_EXT()`. This is primarily for making templates.
+#define EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR_EXT(name_, _template_head_, type_pattern_, ...) \
+    EM_SIMPLE_FUNCTOR_EXT(name_, _template_head_, (::em::Math::MakeElementwiseSameKind<EM_UNWRAP_CODE(type_pattern_)>), __VA_ARGS__)
