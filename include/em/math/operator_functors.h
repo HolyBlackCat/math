@@ -77,7 +77,7 @@ namespace em::Math::Ops
         concept AllowBinaryOperator = !std::is_arithmetic_v<std::decay_t<T>> || have_larger_type<std::decay_t<T>, std::decay_t<U>>;
 
         template <typename T, typename U>
-        concept AllowBinaryOperatorAssign = !std::is_arithmetic_v<std::decay_t<T>> || can_safely_convert<std::decay_t<U>, std::decay_t<T>>;
+        concept AllowBinaryOperatorAssign = !std::is_arithmetic_v<std::decay_t<T>> || can_safely_convert_to<std::decay_t<U>, std::decay_t<T>>;
     }
 
     #define DETAIL_EM_X(name_, op_, ...) \

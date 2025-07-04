@@ -76,5 +76,13 @@ namespace em::Math
 
     // `U` is larger or equal to `T`. Ignores cvref-qualifiers.
     template <typename T, typename U>
-    concept can_safely_convert = Customize::CanSafelyConvert<std::remove_cvref_t<T>, std::remove_cvref_t<U>>::value;
+    concept can_safely_convert_to = Customize::CanSafelyConvert<std::remove_cvref_t<T>, std::remove_cvref_t<U>>::value;
+
+
+    // Make a type floating-point.
+    template <typename T>
+    concept have_floating_point_type = have_larger_type<T, float>;
+
+    template <Meta::cvref_unqualified T> requires have_floating_point_type<T>
+    using floating_point_t = larger_t<T, float>;
 }

@@ -30,16 +30,18 @@
 namespace em::Math
 {
     // This a dummy ADL target, and a customization point for `apply_elementwise()` below.
+    // This should call `std::invoke(func, get_element_somehow(params)...)` one or more times.
     // When overriding this, it's important to reject the simplest `std::invoke(func, params...)` case,
     //   see `apply_elementwise_nontrivial()` below for explanation.
     // The customized versions of this must take a `<bool SameKind>` parameter. For example for vectors, if that's true,
     //   you must reject `vector + scalar` and only allow `vector + vector`.
-    constexpr decltype(auto) _adl_em_apply_elementwise() {}
+    // Note that the customized versions must support the user callback returning void, and in that case probably they should return void too.
+    constexpr decltype(auto) _adl_em_apply_elementwise(/*func, params...*/) {}
     // This version is given a functor that returns a bool (or a type that can be cast to one).
     // When the functor returns true, it returns that return value. Otherwise returns a default-constructed value of the same type.
     // Must always return by value.
     // The customized versions of this must take a `<bool SameKind>` parameter, same as `_adl_em_apply_elementwise()`.
-    constexpr auto _adl_em_any_of_elementwise() {}
+    constexpr auto _adl_em_any_of_elementwise(/*func, params...*/) {}
 
 
     enum class ApplyElementwiseFlags
@@ -110,15 +112,15 @@ namespace em::Math
 }
 
 // Like `EM_SIMPLE_FUNCTOR()`, but can also act elementwise.
-#define EM_SIMPLE_ELEMENTWISE_FUNCTOR(name_, ...) EM_SIMPLE_ELEMENTWISE_FUNCTOR_EXT(name_, (), (EM_1), __VA_ARGS__)
+#define EM_SIMPLE_ELEMENTWISE_FUNCTOR(name_, deduced_targs_, ...) EM_SIMPLE_ELEMENTWISE_FUNCTOR_EXT(name_, (), (EM_1), deduced_targs_, __VA_ARGS__)
 
 // Like `EM_SIMPLE_FUNCTOR()`, but can also act elementwise (only on the same kind of objects).
-#define EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR(name_, ...) EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR_EXT(name_, (), (EM_1), __VA_ARGS__)
+#define EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR(name_, deduced_targs_, ...) EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR_EXT(name_, (), (EM_1), deduced_targs_, __VA_ARGS__)
 
 // The extended version of `EM_SIMPLE_ELEMENTWISE_FUNCTOR()`, see `EM_SIMPLE_FUNCTOR_EXT()`. This is primarily for making templates.
-#define EM_SIMPLE_ELEMENTWISE_FUNCTOR_EXT(name_, _template_head_, type_pattern_, ...) \
-    EM_SIMPLE_FUNCTOR_EXT(name_, _template_head_, (::em::Math::MakeElementwise<EM_UNWRAP_CODE(type_pattern_)>), __VA_ARGS__)
+#define EM_SIMPLE_ELEMENTWISE_FUNCTOR_EXT(name_, _template_head_, type_pattern_, deduced_targs_, ...) \
+    EM_SIMPLE_FUNCTOR_EXT(name_, _template_head_, (::em::Math::MakeElementwise<EM_UNWRAP_CODE(type_pattern_)>), deduced_targs_, __VA_ARGS__)
 
 // The extended version of `EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR()`, see `EM_SIMPLE_FUNCTOR_EXT()`. This is primarily for making templates.
-#define EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR_EXT(name_, _template_head_, type_pattern_, ...) \
-    EM_SIMPLE_FUNCTOR_EXT(name_, _template_head_, (::em::Math::MakeElementwiseSameKind<EM_UNWRAP_CODE(type_pattern_)>), __VA_ARGS__)
+#define EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR_EXT(name_, _template_head_, type_pattern_, deduced_targs_, ...) \
+    EM_SIMPLE_FUNCTOR_EXT(name_, _template_head_, (::em::Math::MakeElementwiseSameKind<EM_UNWRAP_CODE(type_pattern_)>), deduced_targs_, __VA_ARGS__)

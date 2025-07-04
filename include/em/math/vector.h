@@ -13,6 +13,7 @@
 #include "em/math/vector_operators.h"
 #include "em/math/vector_traits.h"
 #include "em/meta/common.h"
+#include "em/meta/functional.h"
 
 #include <utility>
 
@@ -43,7 +44,7 @@ namespace em::Math
             [[nodiscard]] EM_TINY \
             constexpr VectorMembers() noexcept(std::is_nothrow_constructible_v<T>) {} \
             /* Construct elementwise: */ \
-            /* This is intentionally not templated (with `explicit(can_safely_convert)`), because we almost always */ \
+            /* This is intentionally not templated (with `explicit(can_safely_convert_to)`), because we almost always */ \
             /*   use the explicit notation anyway, and we want to disable narrowing conversions even in that case. */ \
             /* And it's easier to delegate the checking to the `-Wconversion` warnings than to do it ourselves. */ \
             [[nodiscard]] EM_TINY \
@@ -56,7 +57,7 @@ namespace em::Math
                 : EM_CODEGEN(seq,(,), EM_1 EM_P(EM_3_OPT(n)) ) \
             {} \
             /* Convert from a vector of another type: */ \
-            template <typename U> requires(vec_size<U> == N) [[nodiscard]] EM_TINY explicit(!can_safely_convert<U, vec<T,N>>) \
+            template <typename U> requires(vec_size<U> == N) [[nodiscard]] EM_TINY explicit(!can_safely_convert_to<U, vec<T,N>>) \
             constexpr VectorMembers(U &&other) noexcept(std::is_nothrow_constructible_v<T, vec_base_cvref_t<U &&>>) requires std::is_constructible_v<T, vec_base_cvref_t<U>> \
                 : EM_CODEGEN(seq,(,), EM_1 EM_P(T EM_P(std::forward_like<U> EM_P(other.EM_1))) ) \
             {} \
@@ -106,7 +107,7 @@ namespace em::Math
         // vec() {}
         // vec(T x, T y...) : x(std::move(x)), y(std::move(y))... {}
         // explicit vec(T n) : x(n), y(std::move(n))... {}
-        // explicit(can_safely_convert) vec(vec<N,T> n) : x(n), y(std::move(n))... {}
+        // explicit(can_safely_convert_to) vec(vec<N,T> n) : x(n), y(std::move(n))... {}
         using detail::Vector::VectorMembers<T, N, vec<T,N>>::VectorMembers;
 
         // map(f) // apply unary functor, return a new vector
@@ -199,6 +200,10 @@ namespace em::Math
         template <bool SameKind, typename F, typename ...P> requires (MaybeSameVecSize<SameKind>::template value<P...> == 2) constexpr auto _adl_em_apply_elementwise(F &&func, P &&... params) EM_RETURNS(vec{std::invoke(func, (vec_elem)(0, EM_FWD(params))...), std::invoke(func, (vec_elem)(1, EM_FWD(params))...)})
         template <bool SameKind, typename F, typename ...P> requires (MaybeSameVecSize<SameKind>::template value<P...> == 3) constexpr auto _adl_em_apply_elementwise(F &&func, P &&... params) EM_RETURNS(vec{std::invoke(func, (vec_elem)(0, EM_FWD(params))...), std::invoke(func, (vec_elem)(1, EM_FWD(params))...), std::invoke(func, (vec_elem)(2, EM_FWD(params))...)})
         template <bool SameKind, typename F, typename ...P> requires (MaybeSameVecSize<SameKind>::template value<P...> == 4) constexpr auto _adl_em_apply_elementwise(F &&func, P &&... params) EM_RETURNS(vec{std::invoke(func, (vec_elem)(0, EM_FWD(params))...), std::invoke(func, (vec_elem)(1, EM_FWD(params))...), std::invoke(func, (vec_elem)(2, EM_FWD(params))...), std::invoke(func, (vec_elem)(3, EM_FWD(params))...)})
+        // Same for `void` return type:
+        template <bool SameKind, typename F, typename ...P> requires (MaybeSameVecSize<SameKind>::template value<P...> == 2) constexpr auto _adl_em_apply_elementwise(F &&func, P &&... params) EM_RETURNS(Meta::invoke_void(func, (vec_elem)(0, EM_FWD(params))...), Meta::invoke_void(func, (vec_elem)(1, EM_FWD(params))...))
+        template <bool SameKind, typename F, typename ...P> requires (MaybeSameVecSize<SameKind>::template value<P...> == 3) constexpr auto _adl_em_apply_elementwise(F &&func, P &&... params) EM_RETURNS(Meta::invoke_void(func, (vec_elem)(0, EM_FWD(params))...), Meta::invoke_void(func, (vec_elem)(1, EM_FWD(params))...), Meta::invoke_void(func, (vec_elem)(2, EM_FWD(params))...))
+        template <bool SameKind, typename F, typename ...P> requires (MaybeSameVecSize<SameKind>::template value<P...> == 4) constexpr auto _adl_em_apply_elementwise(F &&func, P &&... params) EM_RETURNS(Meta::invoke_void(func, (vec_elem)(0, EM_FWD(params))...), Meta::invoke_void(func, (vec_elem)(1, EM_FWD(params))...), Meta::invoke_void(func, (vec_elem)(2, EM_FWD(params))...), Meta::invoke_void(func, (vec_elem)(3, EM_FWD(params))...))
 
         // Implement `any_of_elementwise()` for vectors.
         template <bool SameKind, typename F, typename ...P> requires (MaybeSameVecSize<SameKind>::template value<P...> == 2) constexpr auto _adl_em_any_of_elementwise(F &&func, P &&... params) noexcept(noexcept(auto(std::invoke(func, (vec_elem)(0, EM_FWD(params))...)))) -> decltype(auto(std::invoke(func, (vec_elem)(0, EM_FWD(params))...))) {if (auto d = std::invoke(func, (vec_elem)(0, EM_FWD(params))...)) return d; if (auto d = std::invoke(func, (vec_elem)(1, EM_FWD(params))...)) return d; return {};}
