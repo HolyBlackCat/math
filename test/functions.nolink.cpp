@@ -70,3 +70,14 @@ static_assert(em::clamp(std::numeric_limits<float>::quiet_NaN(), 10, 20) == 10);
 static_assert([]{float i = std::numeric_limits<float>::quiet_NaN(); em::clamp_var_low(i, 10); return i;}() == 10);
 static_assert([]{float i = std::numeric_limits<float>::quiet_NaN(); em::clamp_var_high(i, 20); return i;}() == 20);
 static_assert([]{float i = std::numeric_limits<float>::quiet_NaN(); em::clamp_var(i, 10, 20); return i;}() == 10); // Default to the lower bound, why not.
+
+
+// clamp_abs
+static_assert(em::clamp_abs(5, 10) == 5);
+static_assert(em::clamp_abs(-15, 10) == -10);
+static_assert(em::clamp_abs(15, 10) == 10);
+static_assert(em::clamp_abs(std::numeric_limits<float>::quiet_NaN(), 10) == -10); // Arbitrary, to match the normal `clamp()`.
+static_assert([]{int i = 5; em::clamp_var_abs(i, 10); return i;}() == 5);
+static_assert([]{int i = -15; em::clamp_var_abs(i, 10); return i;}() == -10);
+static_assert([]{int i = 15; em::clamp_var_abs(i, 10); return i;}() == 10);
+static_assert([]{float i = std::numeric_limits<float>::quiet_NaN(); em::clamp_var_abs(i, 10); return i;}() == -10.f); // Arbitrary, to match the normal `clamp()`.

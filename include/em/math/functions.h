@@ -51,6 +51,9 @@ namespace em::Math
         (template <typename T, typename A, typename B, typename L = larger_t<T, A, B>>),
         (const T &target, const A &low, const B &high) EM_RETURNS(target >= low ? (target <= high ? L(target) : L(high)) : L(low))
     )
+    EM_SIMPLE_ELEMENTWISE_FUNCTOR( clamp_abs,,
+        (const auto &target, const auto &abs_limit) EM_RETURNS(clamp(target, -abs_limit, abs_limit))
+    )
 
 
     // Takes a variable by reference and clamps it from one or both sides.
@@ -68,6 +71,9 @@ namespace em::Math
         // This isn't implemented in terms of `clamp_var_{high,low}` to better match how `clamp()` behaves with inverted bounds and NaN.
         (T &target, const A &low, const B &high) EM_RETURNS(target >= low ? (target <= high ? void() : void(target = high)) : void(target = low))
     )
+    EM_SIMPLE_ELEMENTWISE_FUNCTOR( clamp_var_abs,,
+        (auto &target, const auto &abs_limit) EM_RETURNS(clamp_var(target, -abs_limit, abs_limit))
+    )
 
 
     inline namespace Common
@@ -78,11 +84,13 @@ namespace em::Math
         using Math::rad_to_deg;
         using Math::sign;
         using Math::diffsign;
-        using Math::clamp_var_low;
-        using Math::clamp_var_high;
-        using Math::clamp_var;
         using Math::clamp_low;
         using Math::clamp_high;
         using Math::clamp;
+        using Math::clamp_abs;
+        using Math::clamp_var_low;
+        using Math::clamp_var_high;
+        using Math::clamp_var;
+        using Math::clamp_var_abs;
     }
 }
