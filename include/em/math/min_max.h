@@ -55,8 +55,8 @@ namespace em::Math
         template <detail::MinMax::Comparable A, detail::MinMax::Comparable B, detail::MinMax::Comparable C, detail::MinMax::Comparable ...D>
         [[nodiscard]] EM_TINY constexpr auto operator()(A &&a, B &&b, C &&c, D &&... d) const EM_RETURNS((*this)(EM_FWD(a), (*this)(EM_FWD(b), EM_FWD(c), EM_FWD(d)...)))
     };
-    inline constexpr MakeElementwise<FnMinMax<false>> min;
-    inline constexpr MakeElementwise<FnMinMax<true>> max;
+    inline constexpr ApplyElementwiseFn<FnMinMax<false>, {}> min;
+    inline constexpr ApplyElementwiseFn<FnMinMax<true>, {}> max;
 
     inline namespace Common
     {

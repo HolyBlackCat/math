@@ -11,7 +11,7 @@ namespace
     {
         constexpr int operator()(int x, int y) const {return x + y;}
     };
-    constexpr em::Math::MakeElementwise<A> a{};
+    constexpr em::Math::ApplyElementwiseFn<A, {}> a{};
 }
 
 static_assert(a(10, 20) == 30);
@@ -51,7 +51,7 @@ namespace
     {
         constexpr int operator()(int x, int y) const {return x + y;}
     };
-    constexpr em::Math::MakeElementwiseSameKind<B> b{};
+    constexpr em::Math::ApplyElementwiseFn<B, em::Math::ApplyElementwiseFlags::same_kind> b{};
 }
 
 static_assert(b(10, 20) == 30);
@@ -83,7 +83,7 @@ namespace
         constexpr bool operator()(int, int) const {return false;}
         constexpr bool operator()(auto &&...) const {return true;}
     };
-    constexpr em::Math::MakeElementwise<C> c{};
+    constexpr em::Math::ApplyElementwiseFn<C, {}> c{};
 }
 
 static_assert(c(em::Math::ivec3(1,2,3), em::Math::ivec3(4,5,6)));
@@ -142,3 +142,29 @@ static_assert(!CanAnyOfElementwise<em::Math::ApplyElementwiseFlags::nontrivial, 
 static_assert( CanAnyOfElementwise<em::Math::ApplyElementwiseFlags::nontrivial | em::Math::ApplyElementwiseFlags::same_kind, decltype(l3), em::ivec3, em::ivec3>);
 static_assert(!CanAnyOfElementwise<em::Math::ApplyElementwiseFlags::nontrivial | em::Math::ApplyElementwiseFlags::same_kind, decltype(l3), em::ivec3, int>);
 static_assert(!CanAnyOfElementwise<em::Math::ApplyElementwiseFlags::nontrivial | em::Math::ApplyElementwiseFlags::same_kind, decltype(l3), int, int>);
+
+
+// All of:
+static_assert( em::Math::all_of_elementwise(l2, 10, 10));
+static_assert(!em::Math::all_of_elementwise(l2, 10, 20));
+static_assert( em::Math::all_of_elementwise(l2, em::ivec3(10, 20, 30), em::ivec3(10, 20, 30)));
+static_assert(!em::Math::all_of_elementwise(l2, em::ivec3(10, 20, 30), em::ivec3(10, 20, 40)));
+static_assert(!em::Math::all_of_elementwise(l2, em::ivec3(10, 20, 30), em::ivec3(10, 30, 40)));
+static_assert(!em::Math::all_of_elementwise(l2, em::ivec3(10, 20, 30), em::ivec3(20, 30, 40)));
+
+static_assert( em::Math::all_of_elementwise<em::Math::ApplyElementwiseFlags::nontrivial>(l2, em::ivec3(10, 20, 30), em::ivec3(10, 20, 30)));
+static_assert(!em::Math::all_of_elementwise<em::Math::ApplyElementwiseFlags::nontrivial>(l2, em::ivec3(10, 20, 30), em::ivec3(10, 20, 40)));
+static_assert(!em::Math::all_of_elementwise<em::Math::ApplyElementwiseFlags::nontrivial>(l2, em::ivec3(10, 20, 30), em::ivec3(10, 30, 40)));
+static_assert(!em::Math::all_of_elementwise<em::Math::ApplyElementwiseFlags::nontrivial>(l2, em::ivec3(10, 20, 30), em::ivec3(20, 30, 40)));
+
+static_assert( em::Math::all_of_elementwise<em::Math::ApplyElementwiseFlags::same_kind>(l2, 10, 10));
+static_assert(!em::Math::all_of_elementwise<em::Math::ApplyElementwiseFlags::same_kind>(l2, 10, 20));
+static_assert( em::Math::all_of_elementwise<em::Math::ApplyElementwiseFlags::same_kind>(l2, em::ivec3(10, 20, 30), em::ivec3(10, 20, 30)));
+static_assert(!em::Math::all_of_elementwise<em::Math::ApplyElementwiseFlags::same_kind>(l2, em::ivec3(10, 20, 30), em::ivec3(10, 20, 40)));
+static_assert(!em::Math::all_of_elementwise<em::Math::ApplyElementwiseFlags::same_kind>(l2, em::ivec3(10, 20, 30), em::ivec3(10, 30, 40)));
+static_assert(!em::Math::all_of_elementwise<em::Math::ApplyElementwiseFlags::same_kind>(l2, em::ivec3(10, 20, 30), em::ivec3(20, 30, 40)));
+
+static_assert( em::Math::all_of_elementwise(l2, em::vec2(em::ivec2(10, 20), em::ivec2(30, 40)), em::vec2(em::ivec2(10, 20), em::ivec2(30, 40))));
+static_assert(!em::Math::all_of_elementwise(l2, em::vec2(em::ivec2(10, 20), em::ivec2(30, 40)), em::vec2(em::ivec2(10, 20), em::ivec2(30, 50))));
+static_assert(!em::Math::all_of_elementwise(l2, em::vec2(em::ivec2(10, 20), em::ivec2(30, 40)), em::vec2(em::ivec2(10, 30), em::ivec2(30, 40))));
+static_assert(!em::Math::all_of_elementwise(l2, em::vec2(em::ivec2(10, 20), em::ivec2(20, 40)), em::vec2(em::ivec2(10, 30), em::ivec2(30, 40))));

@@ -14,7 +14,7 @@
 // The primary usages are:
 //  1. Making a functor class:
 //      1.1 Using `EM_SIMPLE_ELEMENTWISE[_SAME_KIND]_FUNCTOR()`, which is a modified version of the normal `EM_SIMPLE_FUNCTOR()`.
-//      1.2 Wrapping your functor class with `em::Math::MakeElementwise[SameKind]`.
+//      1.2 Wrapping your functor class with `em::Math::{Apply,AllOf,AnyOf>ElementwiseFn`.
 //  2. Calling `apply_elementwise()` or `any_of_elementwise()`.
 //
 // (1) doesn't expose the "any of" variant.
@@ -58,10 +58,11 @@ namespace em::Math
     };
     EM_FLAG_ENUM(ApplyElementwiseFlags)
 
-
+    // "Apply elementwise" and "any of elementwise".
     EM_CODEGEN(
-        (ApplyElementwiseFn, _adl_em_apply_elementwise)
-        (AnyOfElementwiseFn, _adl_em_any_of_elementwise)
+        (ApplyElementwiseFn,  _adl_em_apply_elementwise , apply_elementwise ,                         )
+        (AnyOfElementwiseFn,  _adl_em_any_of_elementwise, any_of_elementwise,                         )
+        (AllOfElementwiseFn, !_adl_em_any_of_elementwise, all_of_elementwise, Meta::MakeNegatedFuncRef)
     ,,
         // Requiring `F` to be a reference for simplicity. If you decide to support non-references one day,
         //   `EM_FWD(...)` needs to be replaced with `EM_FWD_EX(...)`.
@@ -78,7 +79,10 @@ namespace em::Math
             EM_RETURNS_REQ EM_P(
                 // This condition ensures that we prefer calling the function as-is over elementwise.
                 !requires{Meta::static_cast_to_cvref<F>(EM_FWD(self))(EM_FWD(params)...);},
-                EM_2<same_kind> EM_P(EM_FWD(self), EM_FWD(params)...)
+                EM_2<same_kind> EM_P(
+                    EM_4(EM_FWD(self)),
+                    EM_FWD(params)...
+                )
             )
         };
 
@@ -91,24 +95,20 @@ namespace em::Math
             // In this specialization we intentionally don't `using` the call operator of `F`.
             // Also here we don't need the `requires` condition on this one, because there's inherited one to disambiguate with.
             // We're here stripping the `nontrivial` flag when recursing, because otherwise this flag makes the function uncallable.
-            [[nodiscard]] EM_TINY constexpr auto operator()(this auto &&self, auto &&... params) EM_RETURNS EM_P(EM_2<same_kind> EM_P(EM_1<F, Flags & ~ApplyElementwiseFlags::nontrivial>{Meta::static_cast_to_cvref<F>(EM_FWD(self))}, EM_FWD(params)...))
+            [[nodiscard]] EM_TINY constexpr auto operator()(this auto &&self, auto &&... params)
+            EM_RETURNS EM_P(
+                EM_2<same_kind> EM_P(
+                    EM_4 EM_P(EM_1<Meta::FuncRef<Meta::copy_cvref<decltype(self), F>>, Flags & ~ApplyElementwiseFlags::nontrivial>{Meta::FuncRef(Meta::static_cast_to_cvref<F>(EM_FWD(self)))}),
+                    EM_FWD(params)...
+                )
+            )
         };
+
+        // The user-facing function: `apply_elementwise`, `any_of_elementwise`, etc.
+        // Applying `FuncRef()` here to force the functor to have a class type, so we can inherit from it. And to avoid copying, yes.
+        template <ApplyElementwiseFlags Flags = {}>
+        [[nodiscard]] EM_TINY constexpr auto EM_3(auto &&func, auto &&... params) EM_RETURNS EM_P(EM_1<decltype(Meta::FuncRef(EM_FWD(func))), Flags>{Meta::FuncRef(EM_FWD(func))}(EM_FWD(params)...))
     )
-
-    // Some helpers.
-    template <typename F>
-    using MakeElementwise = ApplyElementwiseFn<F, {}>;
-    template <typename F>
-    using MakeElementwiseSameKind = ApplyElementwiseFn<F, ApplyElementwiseFlags::same_kind>;
-
-    // Applies the function either directly or elementwise to vectors or other similar types.
-    // detail:  Note that we're using `Meta::ToFunctorObject` here, because `ApplyHelper` needs to inherit from whatever you give it.
-    template <ApplyElementwiseFlags Flags = {}>
-    [[nodiscard]] EM_TINY constexpr auto apply_elementwise(auto &&func, auto &&... params) EM_RETURNS(ApplyElementwiseFn<decltype(Meta::ToFunctorObject<Meta::ToFunctorFlags::ref>(EM_FWD(func))), Flags>{Meta::ToFunctorObject<Meta::ToFunctorFlags::ref>(EM_FWD(func))}(EM_FWD(params)...))
-
-    // Applies the function either directly or elementwise to vectors or other similar types.
-    template <ApplyElementwiseFlags Flags = {}>
-    [[nodiscard]] EM_TINY constexpr auto any_of_elementwise(auto &&func, auto &&... params) EM_RETURNS(AnyOfElementwiseFn<decltype(Meta::ToFunctorObject<Meta::ToFunctorFlags::ref>(EM_FWD(func))), Flags>{Meta::ToFunctorObject<Meta::ToFunctorFlags::ref>(EM_FWD(func))}(EM_FWD(params)...))
 }
 
 // Like `EM_SIMPLE_FUNCTOR()`, but can also act elementwise.
@@ -118,9 +118,22 @@ namespace em::Math
 #define EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR(name_, deduced_targs_and_extras_, ...) EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR_EXT(name_, (), (EM_1), deduced_targs_and_extras_, __VA_ARGS__)
 
 // The extended version of `EM_SIMPLE_ELEMENTWISE_FUNCTOR()`, see `EM_SIMPLE_FUNCTOR_EXT()`. This is primarily for making templates.
-#define EM_SIMPLE_ELEMENTWISE_FUNCTOR_EXT(name_, template_head_, type_pattern_, deduced_targs_and_extras_, ...) \
-    EM_SIMPLE_FUNCTOR_EXT(name_, template_head_, (::em::Math::MakeElementwise<EM_UNWRAP_CODE(type_pattern_)>), deduced_targs_and_extras_, __VA_ARGS__)
+#define EM_SIMPLE_ELEMENTWISE_FUNCTOR_EXT(name_, template_head_, type_pattern_, deduced_targs_and_extras_, ...) DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(ApplyElementwiseFn, {}, name_, template_head_, type_pattern_, deduced_targs_and_extras_, __VA_ARGS__)
 
 // The extended version of `EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR()`, see `EM_SIMPLE_FUNCTOR_EXT()`. This is primarily for making templates.
-#define EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR_EXT(name_, template_head_, type_pattern_, deduced_targs_and_extras_, ...) \
-    EM_SIMPLE_FUNCTOR_EXT(name_, template_head_, (::em::Math::MakeElementwiseSameKind<EM_UNWRAP_CODE(type_pattern_)>), deduced_targs_and_extras_, __VA_ARGS__)
+#define EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR_EXT(name_, template_head_, type_pattern_, deduced_targs_and_extras_, ...) DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(ApplyElementwiseFn, ::same_kind, name_, template_head_, type_pattern_, deduced_targs_and_extras_, __VA_ARGS__)
+
+#define EM_SIMPLE_ANY_OF_FUNCTOR(name_, deduced_targs_and_extras_, ...)           EM_SIMPLE_ANY_OF_FUNCTOR_EXT          (name_, (), (EM_1), deduced_targs_and_extras_, __VA_ARGS__)
+#define EM_SIMPLE_ANY_OF_SAME_KIND_FUNCTOR(name_, deduced_targs_and_extras_, ...) EM_SIMPLE_ANY_OF_SAME_KIND_FUNCTOR_EXT(name_, (), (EM_1), deduced_targs_and_extras_, __VA_ARGS__)
+#define EM_SIMPLE_ANY_OF_FUNCTOR_EXT(name_, template_head_, type_pattern_, deduced_targs_and_extras_, ...)           DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(AnyOfElementwiseFn, {}, name_, template_head_, type_pattern_, deduced_targs_and_extras_, __VA_ARGS__)
+#define EM_SIMPLE_ANY_OF_SAME_KIND_FUNCTOR_EXT(name_, template_head_, type_pattern_, deduced_targs_and_extras_, ...) DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(AnyOfElementwiseFn, ::same_kind, name_, template_head_, type_pattern_, deduced_targs_and_extras_, __VA_ARGS__)
+
+#define EM_SIMPLE_ALL_OF_FUNCTOR(name_, deduced_targs_and_extras_, ...)           EM_SIMPLE_ALL_OF_FUNCTOR_EXT          (name_, (), (EM_1), deduced_targs_and_extras_, __VA_ARGS__)
+#define EM_SIMPLE_ALL_OF_SAME_KIND_FUNCTOR(name_, deduced_targs_and_extras_, ...) EM_SIMPLE_ALL_OF_SAME_KIND_FUNCTOR_EXT(name_, (), (EM_1), deduced_targs_and_extras_, __VA_ARGS__)
+#define EM_SIMPLE_ALL_OF_FUNCTOR_EXT(name_, template_head_, type_pattern_, deduced_targs_and_extras_, ...)           DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(AllOfElementwiseFn, {}, name_, template_head_, type_pattern_, deduced_targs_and_extras_, __VA_ARGS__)
+#define EM_SIMPLE_ALL_OF_SAME_KIND_FUNCTOR_EXT(name_, template_head_, type_pattern_, deduced_targs_and_extras_, ...) DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(AllOfElementwiseFn, ::same_kind, name_, template_head_, type_pattern_, deduced_targs_and_extras_, __VA_ARGS__)
+
+
+// This is used internally to implement the macros above.
+#define DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(functor_, flag_, name_, template_head_, type_pattern_, deduced_targs_and_extras_, ...) \
+    EM_SIMPLE_FUNCTOR_EXT(name_, template_head_, (::em::Math::functor_<EM_UNWRAP_CODE(type_pattern_), ::em::Math::ApplyElementwiseFlags flag_>), deduced_targs_and_extras_, __VA_ARGS__)
