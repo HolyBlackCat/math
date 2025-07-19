@@ -127,6 +127,13 @@ static_assert(!em::Math::Robust::equal(em::ivec2(1, 2), 1.f));
 static_assert(!em::Math::Robust::equal(em::ivec2(2, 2), 1.f));
 
 
+// Enums:
+enum class E {e1 = 200};
+
+static_assert(em::Math::Robust::equal(E::e1, 200));
+static_assert(em::Math::Robust::representable_as<int>(E::e1));
+
+
 // "Representable as":
 
 static_assert(em::Math::Robust::representable_as<float>(10));

@@ -13,21 +13,28 @@
 #include <limits>
 #include <stdexcept>
 #include <type_traits>
-
-// This header is used to actively check for narrowing conversions/overflows/etc and catch them.
-// About reliability:
-// The `float x float` comparisons should be completely reliable, as we simply use the builtin comparison operators.
-// The `int x int` comparisons should also be reliable, as the comparison algorithm is simple.
-// The `int x float` comparisons, on the other hand, rely on a complicated algorithm. Even though they were tested,
-//     it's hard to guarantee complete robustness here. Also they might be slow.
+#include <utility>
 
 namespace em::Math::Robust
 {
+    // Here we support enums as integers, but we can't check the range of unscoped enums, so using them as conversion targets can still cause UB if out of range.
+
     template <typename T>
-    concept builtin_scalar = std::is_arithmetic_v<T>;
+    concept builtin_scalar = Meta::cv_unqualified<T> && std::is_arithmetic_v<T>;
+    template <typename T>
+    concept builtin_scalar_or_enum = builtin_scalar<T> || (Meta::cv_unqualified<T> && std::is_enum_v<T>);
 
     namespace detail
     {
+        template <builtin_scalar_or_enum T>
+        [[nodiscard]] constexpr auto to_underlying_if_enum(T t)
+        {
+            if constexpr (std::is_enum_v<T>)
+                return std::to_underlying(t);
+            else
+                return t;
+        }
+
         // Compares an integral and a floating-point value.
         // Despite the parameter names, it doesn't matter which one is which.
         // Follows a so-called 'partial ordering': for some pairs of values you get a special 'undefined' result (i.e. for NaNs compared with any number).
@@ -120,7 +127,7 @@ namespace em::Math::Robust
     }
 
     // For internal use, and also a customization point. Prefer the public functions below.
-    template <builtin_scalar A, builtin_scalar B>
+    template <builtin_scalar_or_enum A, builtin_scalar_or_enum B>
     [[nodiscard]] constexpr auto _adl_em_robust_compare_scalars_three_way(A a, B b) noexcept
     {
         if constexpr (std::is_floating_point_v<A> && std::is_floating_point_v<B>)
@@ -129,11 +136,11 @@ namespace em::Math::Robust
         }
         else if constexpr (!std::is_floating_point_v<A> && !std::is_floating_point_v<B>)
         {
-            return detail::compare_integers_three_way(a, b);
+            return detail::compare_integers_three_way(detail::to_underlying_if_enum(a), detail::to_underlying_if_enum(b));
         }
         else
         {
-            return detail::compare_int_float_three_way(a, b);
+            return detail::compare_int_float_three_way(detail::to_underlying_if_enum(a), detail::to_underlying_if_enum(b));
         }
     }
 
@@ -187,7 +194,7 @@ namespace em::Math::Robust
     EM_SILENCE_DIAGNOSTIC_IF(EM_IS_GCC_LIKE, "-Wfloat-conversion")(
     EM_SIMPLE_FUNCTOR_EXT( representable_as,
         (template <typename To>), (EM_1<To>),
-        (template <typename From> requires std::constructible_from<To, const From &>), // Using "constructible" to allow scalar-to-vector stuff.
+        (template <typename From>), // No separate SFINAE on this, `EM_RETURNS()` is enough. Note that `is_convertible` isn't enough, because we want scalar-to-vector casts. And also `is_constructible` isn't enough, because we want enum-to-integer casts.
         (const From &value) EM_RETURNS(equal(To(value), value))
     )
     )
