@@ -48,7 +48,7 @@ namespace em::Math
         // Note that if one of the two arguments matches the larger type, `CastOrForward()` doesn't copy/move it, and instead returns by reference.
         // Note that we need a negative old-style SFINAE here. This having lower precedence than the overload with `requires` above
         //   doens't seem to be enough, in that case Clang fails with an infinite instantiation recursion.
-        template <detail::MinMax::Comparable A, detail::MinMax::Comparable B, EM_CHECK(!Meta::same_ignoring_cvref<A, B>)>
+        template <detail::MinMax::Comparable A, detail::MinMax::Comparable B, EM_CHECK_COND(!Meta::same_ignoring_cvref<A, B>)>
         [[nodiscard]] EM_TINY constexpr auto operator()(A &&a, B &&b) const EM_RETURNS((*this)(detail::MinMax::CastOrForward<larger_t<A, B>>(EM_FWD(a)), detail::MinMax::CastOrForward<larger_t<A, B>>(EM_FWD(b))))
         // Three+ arguments -> fold. Must use `Meta::Fold` because `EM_RETURNS()` can't recursively call the same function,
         //   because you can't `decltype(...)` it for the return type, and `noexcept(...)` doesn't work too.
