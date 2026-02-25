@@ -2,13 +2,34 @@
 
 #include "em/macros/meta/common.h"
 #include "em/macros/portable/canonical_typedefs.h"
+#include "em/math/namespaces.h" // Need this to import `em::Math::inline Common` into `em`.
 
-#include <cstddef>
-#include <cstdint>
+#include <cstddef> // IWYU pragma: keep, this is used in the macros.
+#include <cstdint> // IWYU pragma: keep, this is used in the macros.
 
 // Short spellings for types, to bake them into type names.
-// This header doesn't define any typedefs by itself, only the macros.
-// e.g. `em/math/vector.h` makes its own typedefs using this.
+// This header defines the macros for this (e.g. `em/math/vector.h` makes its own typedefs using those),
+//   but also adds the typedefs for the standard types into `namespace em::Math::inline Common`.
+
+
+#define EM_MATH_TYPE_SHORTHANDS_STD_ONLY(X, ...) \
+    X( i8  , std::int8_t        __VA_OPT__(,)__VA_ARGS__ ) \
+    X( u8  , std::uint8_t       __VA_OPT__(,)__VA_ARGS__ ) \
+    X( i16 , std::int16_t       __VA_OPT__(,)__VA_ARGS__ ) \
+    X( u16 , std::uint16_t      __VA_OPT__(,)__VA_ARGS__ ) \
+    X( i32 , std::int32_t       __VA_OPT__(,)__VA_ARGS__ ) \
+    X( u32 , std::uint32_t      __VA_OPT__(,)__VA_ARGS__ ) \
+    X( i64 , std::int64_t       __VA_OPT__(,)__VA_ARGS__ ) \
+    X( u64 , std::uint64_t      __VA_OPT__(,)__VA_ARGS__ ) \
+    X( x   , std::ptrdiff_t     __VA_OPT__(,)__VA_ARGS__ ) \
+    X( z   , std::size_t        __VA_OPT__(,)__VA_ARGS__ ) \
+
+namespace em::Math::inline Common
+{
+    #define DETAIL_EM_X(t_, type_) using type_;
+    EM_MATH_TYPE_SHORTHANDS_STD_ONLY(DETAIL_EM_X)
+    #undef DETAIL_EM_X
+}
 
 #define EM_MATH_TYPE_SHORTHANDS(X, ...) \
     X( b   , bool               __VA_OPT__(,)__VA_ARGS__ ) \
@@ -26,16 +47,7 @@
     X( f   , float              __VA_OPT__(,)__VA_ARGS__ ) \
     X( d   , double             __VA_OPT__(,)__VA_ARGS__ ) \
     X( ld  , long double        __VA_OPT__(,)__VA_ARGS__ ) \
-    X( i8  , std::int8_t        __VA_OPT__(,)__VA_ARGS__ ) \
-    X( u8  , std::uint8_t       __VA_OPT__(,)__VA_ARGS__ ) \
-    X( i16 , std::int16_t       __VA_OPT__(,)__VA_ARGS__ ) \
-    X( u16 , std::uint16_t      __VA_OPT__(,)__VA_ARGS__ ) \
-    X( i32 , std::int32_t       __VA_OPT__(,)__VA_ARGS__ ) \
-    X( u32 , std::uint32_t      __VA_OPT__(,)__VA_ARGS__ ) \
-    X( i64 , std::int64_t       __VA_OPT__(,)__VA_ARGS__ ) \
-    X( u64 , std::uint64_t      __VA_OPT__(,)__VA_ARGS__ ) \
-    X( x   , std::ptrdiff_t     __VA_OPT__(,)__VA_ARGS__ ) \
-    X( z   , std::size_t        __VA_OPT__(,)__VA_ARGS__ ) \
+    EM_MATH_TYPE_SHORTHANDS_STD_ONLY(X, __VA_ARGS__)
 
 // Same syntax as `EM_CANONICAL_TYPEDEFS(...)`, but without the type list, since that's generated automatically.
 #define EM_MATH_TYPE_SHORTHANDS_VEC(kind_, vec_) \
