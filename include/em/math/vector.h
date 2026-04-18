@@ -5,6 +5,7 @@
 #include "em/macros/portable/if_consteval.h"
 #include "em/macros/portable/tiny_func.h"
 #include "em/macros/utils/cvref.h"
+#include "em/macros/utils/forward.h"
 #include "em/math/min_max.h"
 #include "em/math/namespaces.h"
 #include "em/math/rebind.h"
@@ -15,6 +16,8 @@
 #include "em/meta/common.h"
 #include "em/meta/functional.h"
 
+#include <cstddef>
+#include <tuple>
 #include <utility>
 
 // This header is self-sufficient for vectors. The overloaded operators for vectors are included here too.
@@ -225,4 +228,22 @@ namespace em::Math::inline Common
 {
     using Math::vec;
     EM_MATH_IMPORT_TYPE_SHORTHANDS_VEC(Math::,vec)
+}
+
+
+// Implement the tuple protocol for vectors:
+
+template <typename T, int N>
+struct std::tuple_size<em::Math::vec<T, N>> : std::integral_constant<std::size_t, N> {};
+
+template <std::size_t I, typename T, int N>
+struct std::tuple_element<I, em::Math::vec<T, N>> {using type = T;};
+
+namespace em::Math
+{
+    template <std::size_t I>
+    constexpr auto &&get(vector_cvref auto &&vec)
+    {
+        return (vec_elem)(I, EM_FWD(vec));
+    }
 }
