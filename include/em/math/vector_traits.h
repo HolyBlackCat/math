@@ -6,6 +6,8 @@
 
 #include <type_traits>
 
+// Everything here is designed to in theory accept third-party vector types.
+
 namespace em::Math
 {
     namespace Customize
@@ -22,6 +24,12 @@ namespace em::Math
                 (void)i;
                 return v; // Intentionally no forwarding.
             }
+
+            // Given `vecN<U>`, returns `vecN<T>`. Makes no sense for scalars.
+            //   template <typename T> using change_base = ...;
+            // Given `vec<T,M>`, returns `vec<T,N>`. Makes no sense for scalars.
+            // You don't need to support `N == 1`, we do this ourselves.
+            //   template <int N> using change_size = ...;
         };
     }
 
@@ -61,6 +69,7 @@ namespace em::Math
     static constexpr int common_vec_size = common_vec_size_or_zero<P...>;
 
     // Some concepts:
+    // Remember that vectors can hold more things than just scalars, so don't overuse `vector_or_scalar`.
 
     template <typename T> concept vector_cvref = Customize::VectorTraits<std::remove_cvref_t<T>>::size > 1;
     template <typename T> concept vector = Meta::cvref_unqualified<T> && vector_cvref<T>;
@@ -89,10 +98,32 @@ namespace em::Math
 
     // Returns i-th element of a vector. If `v` is not a vector, returns it as is.
     // Prefer `apply_elementwise` to looping over `vec_elem`, because `apply_elementwise` supports more types (rects, etc).
-    // No `vector_or_scalar_cvref` to allow arbitrary types.
+    // NOTE: No `vector_or_scalar_cvref` to allow arbitrary types.
     template <typename T>
     [[nodiscard]] constexpr auto &&vec_elem(int i, T &&v) noexcept
     {
         return Customize::VectorTraits<std::remove_cvref_t<T>>::GetElem(i, EM_FWD(v));
     }
+
+
+    // Modifying vector properties:
+
+    namespace detail::VecTraits
+    {
+        template <typename V, int N>
+        struct ChangeSize;
+        template <typename V>
+        struct ChangeSize<V, 1> {using type = vec_base_t<V>;};
+        // This has to be in a specialization to have a constraint, which we need to make `change_vec_size` SFINAE-friendly.
+        template <typename V, int N> requires (N > 1) && requires{typename Customize::VectorTraits<V>::template change_size<N>;}
+        struct ChangeSize<V, N> {using type = typename Customize::VectorTraits<V>::template change_size<N>;};
+    }
+
+    // Given `V == vec<U,N>`, returns `vec<T,N>`.
+    template <vector V, typename T> requires requires{typename Customize::VectorTraits<V>::template change_base<T>;}
+    using change_vec_base = typename Customize::VectorTraits<V>::template change_base<T>;
+
+    // Given `V == vec<T,M>`, returns `vec<T,N>`.
+    template <vector V, int N> requires requires{typename detail::VecTraits::ChangeSize<V, N>::type;}
+    using change_vec_size = typename detail::VecTraits::ChangeSize<V, N>::type;
 }

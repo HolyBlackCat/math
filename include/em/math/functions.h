@@ -119,6 +119,16 @@ namespace em::Math
     EM_SIMPLE_ELEMENTWISE_FUNCTOR( nextafter, (template <scalar T>), (const T &a, const T &b) EM_RETURNS(detail::Funcs::nextafter_(a, b)))
 
 
+    // Integer division, modified for negative values of `a` to be periodic:
+    //           i : -4  -3  -2  -1  0  1  2  3  4
+    // div_ex(i,2) : -2  -2  -1  -1  0  0  1  1  2
+    EM_SIMPLE_ELEMENTWISE_FUNCTOR( div_ex,, (const integral_scalar auto &a, const integral_scalar auto &b) EM_RETURNS(a >= 0 ? a / b : (a + 1) / b - sign(b)) )
+
+    // Integer division, modified for negative values of `a` to be periodic:
+    //           i : -4  -3  -2  -1  0  1  2  3  4
+    // div_ex(i,3) :  2   0   1   2  0  1  2  0  1
+    EM_SIMPLE_ELEMENTWISE_FUNCTOR( mod_ex,, (const integral_scalar auto &a, const integral_scalar auto &b) EM_RETURNS(a >= 0 ? a % b : abs(b) - 1 + (a + 1) % b) )
+
 
 
     inline namespace Common
@@ -147,5 +157,7 @@ namespace em::Math
         using Math::frac;
         using Math::modf;
         using Math::nextafter;
+        using Math::div_ex;
+        using Math::mod_ex;
     }
 }

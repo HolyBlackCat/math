@@ -5,7 +5,7 @@
 #include "em/macros/utils/flag_enum.h"
 #include "em/macros/utils/forward.h"
 #include "em/macros/utils/functors.h"
-#include "em/macros/utils/returns.h"
+#include "em/macros/utils/returns.h" // IWYU pragma: keep. We use those macros here.
 #include "em/meta/casts.h"
 #include "em/meta/functional.h"
 
@@ -32,7 +32,7 @@ namespace em::Math
     // This a dummy ADL target, and a customization point for `apply_elementwise()` below.
     // This should call `std::invoke(func, get_element_somehow(params)...)` one or more times.
     // When overriding this, it's important to reject the simplest `std::invoke(func, params...)` case,
-    //   see `apply_elementwise_nontrivial()` below for explanation.
+    //   see `ApplyElementwiseFlags::nontrivial` below for explanation.
     // The customized versions of this must take a `<bool SameKind>` parameter. For example for vectors, if that's true,
     //   you must reject `vector + scalar` and only allow `vector + vector`.
     // Note that the customized versions must support the user callback returning void, and in that case probably they should return void too.
@@ -93,7 +93,7 @@ namespace em::Math
 
           public:
             // In this specialization we intentionally don't `using` the call operator of `F`.
-            // Also here we don't need the `requires` condition on this one, because there's inherited one to disambiguate with.
+            // Also here we don't need the `requires` condition on this one, because there's no inherited one to disambiguate with.
             // We're here stripping the `nontrivial` flag when recursing, because otherwise this flag makes the function uncallable.
             [[nodiscard]] EM_TINY constexpr auto operator()(this auto &&self, auto &&... params)
             EM_RETURNS EM_P(

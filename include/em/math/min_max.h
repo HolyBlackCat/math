@@ -50,8 +50,7 @@ namespace em::Math
         //   doens't seem to be enough, in that case Clang fails with an infinite instantiation recursion.
         template <detail::MinMax::Comparable A, detail::MinMax::Comparable B, EM_CHECK_COND(!Meta::same_ignoring_cvref<A, B>)>
         [[nodiscard]] EM_TINY constexpr auto operator()(A &&a, B &&b) const EM_RETURNS((*this)(detail::MinMax::CastOrForward<larger_t<A, B>>(EM_FWD(a)), detail::MinMax::CastOrForward<larger_t<A, B>>(EM_FWD(b))))
-        // Three+ arguments -> fold. Must use `Meta::Fold` because `EM_RETURNS()` can't recursively call the same function,
-        //   because you can't `decltype(...)` it for the return type, and `noexcept(...)` doesn't work too.
+        // Three+ arguments -> fold.
         template <detail::MinMax::Comparable A, detail::MinMax::Comparable B, detail::MinMax::Comparable C, detail::MinMax::Comparable ...D>
         [[nodiscard]] EM_TINY constexpr auto operator()(A &&a, B &&b, C &&c, D &&... d) const EM_RETURNS((*this)(EM_FWD(a), (*this)(EM_FWD(b), EM_FWD(c), EM_FWD(d)...)))
     };

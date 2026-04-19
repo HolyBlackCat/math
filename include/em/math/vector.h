@@ -1,6 +1,7 @@
 #pragma once
 
 #include "em/macros/meta/codegen.h"
+#include "em/macros/meta/ranges.h"
 #include "em/macros/portable/assume.h"
 #include "em/macros/portable/if_consteval.h"
 #include "em/macros/portable/tiny_func.h"
@@ -8,7 +9,6 @@
 #include "em/macros/utils/forward.h"
 #include "em/math/min_max.h"
 #include "em/math/namespaces.h"
-#include "em/math/rebind.h"
 #include "em/math/scalar.h"
 #include "em/math/type_shorthands.h"
 #include "em/math/vector_operators.h"
@@ -38,68 +38,134 @@ namespace em::Math
 
     namespace detail::Vector
     {
+        template <typename T, int N>
+        struct VecOrScalar {using type = vec<T, N>;};
+        template <typename T>
+        struct VecOrScalar<T, 1> {using type = T;};
+    }
+
+    // For `N == 1`, returns `T`. Otherwise returns `vec<T, N>`.
+    template <Meta::cvref_unqualified T, int N>
+    using vec_or_scalar = typename detail::Vector::VecOrScalar<T, N>::type;
+
+    // A little helper class for function parameters, to accept vectors without the last component.
+    // Can be constructed either from `V` exactly, or from one less element.
+    // Stores a member variable `V value;`.
+    template <vector V, vec_base_t<V> DefaultElem>
+    struct with_default_component;
+
+    namespace detail::Vector
+    {
         // This base provides the x,y,z,w members for vectors. And also the elementwise constructor.
         template <typename T, int N, typename Derived> requires ValidSize<N>
         struct VectorMembers;
 
-        #define DETAIL_EM_VEC(N, seq, reduce_) \
-            T EM_CODEGEN(seq,(,), EM_1{} ); \
-            [[nodiscard]] EM_TINY \
-            constexpr VectorMembers() noexcept(std::is_nothrow_constructible_v<T>) {} \
-            /* Construct elementwise: */ \
-            /* This is intentionally not templated (with `explicit(can_safely_convert_to)`), because we almost always */ \
-            /*   use the explicit notation anyway, and we want to disable narrowing conversions even in that case. */ \
-            /* And it's easier to delegate the checking to the `-Wconversion` warnings than to do it ourselves. */ \
-            [[nodiscard]] EM_TINY \
-            constexpr VectorMembers( EM_CODEGEN(seq,(,), T EM_1 ) ) noexcept(std::is_nothrow_move_constructible_v<T>) \
-                : EM_CODEGEN(seq,(,), EM_1 EM_P(std::move EM_P(EM_1)) ) \
-            {} \
-            /* Fill with the same element: */ \
-            [[nodiscard]] EM_TINY explicit \
-            constexpr VectorMembers(T n) noexcept(std::is_nothrow_copy_constructible_v<T> && std::is_nothrow_move_constructible_v<T>) \
-                : EM_CODEGEN(seq,(,), EM_1 EM_P(EM_3_OPT(n)) ) \
-            {} \
-            /* Convert from a vector of another type: */ \
-            template <typename U> requires(vec_size<U> == N) [[nodiscard]] EM_TINY explicit(!can_safely_convert_to<U, vec<T,N>>) \
-            constexpr VectorMembers(U &&other) noexcept(std::is_nothrow_constructible_v<T, vec_base_cvref_t<U &&>>) requires std::is_constructible_v<T, vec_base_cvref_t<U>> \
-                : EM_CODEGEN(seq,(,), EM_1 EM_P(T EM_P(std::forward_like<U> EM_P(other.EM_1))) ) \
-            {} \
-            /* Not using "deducing this" here because it prevents the use of this function in `EM_RETURNS()` in derived classes, */\
-            /*   see: https://stackoverflow.com/q/79081096/2752075 */\
-            EM_MAYBE_CONST_LR( \
-                /* Applies unary functor to each element, returns a new vector. */\
-                [[nodiscard]] EM_TINY constexpr auto map(auto &&f) EM_QUAL EM_RETURNS EM_P(rebind_to<std::decay_t<decltype EM_P(f EM_P(EM_FWD_SELF.x))>, Derived> EM_P(EM_CODEGEN(seq,(,), f EM_E(EM_LP EM_FWD_SELF).EM_1 EM_E(EM_RP) ))) \
-                /* Calls a function with all elements as parameters. */\
-                [[nodiscard]] EM_TINY constexpr auto apply(auto &&f) EM_QUAL EM_RETURNS EM_P(EM_FWD(f) EM_P(EM_CODEGEN(seq,(,), EM_E(EM_FWD_SELF).EM_1 ))) \
-                /* Change the element type. */\
-                template <Meta::cvref_unqualified U> requires(std::is_constructible_v<U, T>) \
-                [[nodiscard]] EM_TINY constexpr auto to() EM_QUAL EM_RETURNS EM_P(vec<U,N> EM_P(EM_CODEGEN(seq,(,), U EM_E(EM_LP EM_FWD_SELF).EM_1 EM_E(EM_RP) ))) \
-                /* Reduces all elements over a binary function. */\
-                [[nodiscard]] EM_TINY constexpr auto reduce(auto &&f) EM_QUAL EM_RETURNS EM_P( EM_UNWRAP_CODE(reduce_) )\
-            ) \
-            /* RGBA-style member accessors. They are here instead of `Vector` because disabling them with `requires` */\
-            /* still shows them in the code completion, and that looks a big ugly. */\
-            EM_CODEGEN(seq,, \
-                [[nodiscard]] EM_TINY constexpr auto &&EM_2(this auto &&self) noexcept {return EM_FWD(self).EM_1;} \
-            )
+        // The base for a little parameter helper to take vectors with optional last element.
+        template <vector V, vec_base_t<V> DefaultElem>
+        struct WithDefaultComponent;
 
-        template <typename T, typename Derived>
-        struct VectorMembers<T, 2, Derived>
-        {
-            DETAIL_EM_VEC(2, (x,r)(y,g,std::move), (EM_FWD(f) EM_P(EM_FWD_SELF.x, EM_FWD_SELF.y)))
-        };
-        template <typename T, typename Derived>
-        struct VectorMembers<T, 3, Derived>
-        {
-            DETAIL_EM_VEC(3, (x,r)(y,g)(z,b,std::move), (f EM_P(EM_FWD_SELF.x, f EM_P(EM_FWD_SELF.y, EM_FWD_SELF.z))))
-        };
-        template <typename T, typename Derived>
-        struct VectorMembers<T, 4, Derived>
-        {
-            DETAIL_EM_VEC(4, (x,r)(y,g)(z,b)(w,a,std::move), (f EM_P(f EM_P(EM_FWD_SELF.x, EM_FWD_SELF.y), f EM_P(EM_FWD_SELF.z, EM_FWD_SELF.w))))
-        };
+        #define DETAIL_EM_VEC(N, seq, reduce_) DETAIL_EM_VEC_LOW(N, seq, EM_SEQ_DROP_LAST(seq), EM_SEQ_LAST(seq), reduce_)
+
+        // NOTE: There are two classes implemented here, the vector itself, and the parameter helper for passing vectors without the last element.
+        // The constrctors of those need to be somewhat synced. Keep that in mind when touching the vector constructors.
+        #define DETAIL_EM_VEC_LOW(N, seq, seq_without_last, seq_last, reduce_) \
+            namespace detail::Vector \
+            { \
+                template <typename T, typename Derived> \
+                struct VectorMembers<T, N, Derived> \
+                { \
+                    /* Fields: */\
+                    T EM_CODEGEN(seq,(,), EM_1{} ); \
+                    /* Default constructor: */\
+                    [[nodiscard]] EM_TINY \
+                    constexpr VectorMembers() noexcept(std::is_nothrow_constructible_v<T>) {} \
+                    /* Construct elementwise: */ \
+                    /* This is intentionally not templated (with `explicit(can_safely_convert_to)`), because we almost always */ \
+                    /*   use the explicit notation anyway, and we want to disable narrowing conversions even in that case. */ \
+                    /* And it's easier to delegate the checking to the `-Wconversion` warnings than to do it ourselves. */ \
+                    [[nodiscard]] EM_TINY \
+                    constexpr VectorMembers( EM_CODEGEN(seq,(,), T EM_1 ) ) noexcept(std::is_nothrow_move_constructible_v<T>) \
+                        : EM_CODEGEN(seq,(,), EM_1 EM_P(std::move EM_P(EM_1)) ) \
+                    {} \
+                    /* Fill with the same element: */ \
+                    [[nodiscard]] EM_TINY explicit \
+                    constexpr VectorMembers(T n) noexcept(std::is_nothrow_copy_constructible_v<T> && std::is_nothrow_move_constructible_v<T>) \
+                        : EM_CODEGEN(seq,(,), EM_1 EM_P(EM_3_OPT(n)) ) \
+                    {} \
+                    /* Convert from a vector of another type: */ \
+                    /* I assume we're doing `vec_size<U> == N` here (instead of just using `vec<U, N>`) to support third-party vectors. */ \
+                    template <typename U> requires(vec_size<U> == N && std::is_constructible_v<T, vec_base_cvref_t<U>>) [[nodiscard]] EM_TINY explicit(!can_safely_convert_to<U, vec<T,N>>) \
+                    constexpr VectorMembers(U &&other) noexcept(std::is_nothrow_constructible_v<T, vec_base_cvref_t<U &&>>) \
+                        : EM_CODEGEN(seq,(,), EM_1 EM_P(T EM_P(std::forward_like<U> EM_P(other.EM_1))) ) \
+                    {} \
+                    /* Not using "deducing this" here because it prevents the use of this function in `EM_RETURNS()` in derived classes, */\
+                    /*   see: https://stackoverflow.com/q/79081096/2752075 */\
+                    EM_MAYBE_CONST_LR( \
+                        /* Applies unary functor to each element, returns a new vector. */\
+                        [[nodiscard]] EM_TINY constexpr auto map(auto &&f) EM_QUAL EM_RETURNS EM_P(change_vec_base<Derived, std::decay_t<decltype EM_P(f EM_P(EM_FWD_SELF.x))>> EM_P(EM_CODEGEN(seq,(,), f EM_E(EM_LP EM_FWD_SELF).EM_1 EM_E(EM_RP) ))) \
+                        /* Calls a function with all elements as parameters. */\
+                        [[nodiscard]] EM_TINY constexpr auto apply(auto &&f) EM_QUAL EM_RETURNS EM_P(EM_FWD(f) EM_P(EM_CODEGEN(seq,(,), EM_E(EM_FWD_SELF).EM_1 ))) \
+                        /* Change the element type. */\
+                        template <Meta::cvref_unqualified U> requires(std::is_constructible_v<U, T>) \
+                        [[nodiscard]] EM_TINY constexpr auto to() EM_QUAL EM_RETURNS EM_P(vec<U,N> EM_P(EM_CODEGEN(seq,(,), U EM_E(EM_LP EM_FWD_SELF).EM_1 EM_E(EM_RP) ))) \
+                        /* Reduces all elements over a binary function. */\
+                        [[nodiscard]] EM_TINY constexpr auto reduce(auto &&f) EM_QUAL EM_RETURNS EM_P( EM_UNWRAP_CODE(reduce_) )\
+                    ) \
+                    /* RGBA-style member accessors. They are here instead of `Vector` because disabling them with `requires` */\
+                    /* still shows them in the code completion, and that looks a big ugly. */\
+                    EM_CODEGEN(seq,, \
+                        [[nodiscard]] EM_TINY constexpr auto &&EM_2(this auto &&self) noexcept {return EM_FWD(self).EM_1;} \
+                    ) \
+                }; \
+            } \
+            \
+            template <vector V, vec_base_t<V> DefaultElem> requires (vec_size<V> == N) \
+            struct with_default_component<V, DefaultElem> \
+            { \
+              private: \
+                using T = vec_base_t<V>; \
+                \
+              public: \
+                V value; /* Not inheriting from the vector, for general sanity. */\
+                \
+                /* The constructors below are mostly copied from `vec`, skipping the explicit ones (or omitting the explicit behavior). */\
+                /* Since this class is a parameter helper, it doesn't need those. */\
+                \
+                /* Elementwise, from all elements. */\
+                [[nodiscard]] EM_TINY \
+                constexpr with_default_component( EM_CODEGEN(seq,(,), T EM_1 ) ) noexcept(std::is_nothrow_move_constructible_v<T>) \
+                    : value( EM_CODEGEN(seq,(,), std::move EM_P(EM_1) ) ) \
+                {} \
+                /* Elementwise, minus the last element. */\
+                [[nodiscard]] EM_TINY \
+                constexpr with_default_component( EM_CODEGEN(seq_without_last,(,), T EM_1 ) ) noexcept(std::is_nothrow_move_constructible_v<T> && std::is_nothrow_copy_constructible_v<T>) \
+                    : value( EM_CODEGEN(seq_without_last,(,), std::move EM_P(EM_1) ), DefaultElem ) \
+                {} \
+                /* Convert from a vector of another type, with the same number of elements. */ \
+                /* We're dropping the explicit part entirely. This is either implicit or nothing. */ \
+                template <typename U> requires(vec_size<U> == N && std::is_constructible_v<T, vec_base_cvref_t<U>> && can_safely_convert_to<U, vec<T,N>>) [[nodiscard]] EM_TINY \
+                constexpr with_default_component(U &&other) noexcept(std::is_nothrow_constructible_v<T, vec_base_cvref_t<U &&>>) \
+                    : value( EM_CODEGEN(seq,(,), std::forward_like<U> EM_P(other.EM_1)) ) \
+                {} \
+                /* Convert from a vector of another type, without the last element. */ \
+                /* We're dropping the explicit part entirely. This is either implicit or nothing. */ \
+                template <typename U> requires(vec_size<U> == N - 1 && std::is_constructible_v<T, vec_base_cvref_t<U>> && can_safely_convert_to<U, vec<T, N - 1>>) [[nodiscard]] EM_TINY \
+                constexpr with_default_component(U &&other) noexcept(std::is_nothrow_constructible_v<T, vec_base_cvref_t<U &&>> && std::is_nothrow_copy_constructible_v<T>) \
+                    : value( EM_CODEGEN(seq_without_last,(,), std::forward_like<U> EM_P(other.EM_1)), DefaultElem ) \
+                {} \
+            };
     }
 
+    // Internal stuff. Some of it are specializations that are required to be in this namespace, which is why those macros are here.
+    DETAIL_EM_VEC(2, (x,r)(y,g,std::move), (EM_FWD(f) EM_P(EM_FWD_SELF.x, EM_FWD_SELF.y)))
+    DETAIL_EM_VEC(3, (x,r)(y,g)(z,b,std::move), (f EM_P(EM_FWD_SELF.x, f EM_P(EM_FWD_SELF.y, EM_FWD_SELF.z))))
+    DETAIL_EM_VEC(4, (x,r)(y,g)(z,b)(w,a,std::move), (f EM_P(f EM_P(EM_FWD_SELF.x, EM_FWD_SELF.y), f EM_P(EM_FWD_SELF.z, EM_FWD_SELF.w))))
+
+    #undef DETAIL_EM_VEC
+    #undef DETAIL_EM_VEC_LOW
+
+
+    // The vector class itself.
     template <Meta::cvref_unqualified T, int N> requires detail::Vector::ValidSize<N>
     struct vec : VectorOps::EnableVectorOps<vec<T,N>>, detail::Vector::VectorMembers<T, N, vec<T,N>>
     {
@@ -175,6 +241,12 @@ namespace em::Math
             {
                 return EM_FWD(v)[i];
             }
+
+            template <Meta::cvref_unqualified U>
+            using change_base = vec<U, N>;
+
+            template <int M> requires detail::Vector::ValidSize<M>
+            using change_size = vec<T, M>;
         };
     }
 
