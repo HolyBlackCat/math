@@ -49,7 +49,7 @@ namespace em::Math
     using vec_or_scalar = typename detail::Vector::VecOrScalar<T, N>::type;
 
     // A little helper class for function parameters, to accept vectors without the last component.
-    // Can be constructed either from `V` exactly, or from one less element.
+    // Can be constructed either from `V` exactly, or from a vector with one fewer element. Or elementwise from `N` or `N - 1` elements.
     // Stores a member variable `V value;`.
     template <vector V, vec_base_t<V> DefaultElem>
     struct with_default_component;
@@ -300,6 +300,8 @@ namespace em::Math::inline Common
 {
     using Math::vec;
     EM_MATH_IMPORT_TYPE_SHORTHANDS_VEC(Math::,vec)
+
+    using Math::with_default_component;
 }
 
 
