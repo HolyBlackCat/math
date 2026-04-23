@@ -62,3 +62,16 @@ template <typename T> concept CanCallToVec4 = requires(T t){t.to_vec4();};
 static_assert(!CanCallToVec2<em::ivec2> && CanCallToVec2<em::ivec3> && CanCallToVec2<em::ivec4>);
 static_assert(CanCallToVec3<em::ivec2> && !CanCallToVec3<em::ivec3> && CanCallToVec3<em::ivec4>);
 static_assert(CanCallToVec4<em::ivec2> && CanCallToVec4<em::ivec3> && !CanCallToVec4<em::ivec4>);
+
+
+// `with_default_component`:
+
+using wd2 = em::with_default_component<em::ivec2, -2>;
+using wd3 = em::with_default_component<em::ivec3, -3>;
+static_assert(wd3(em::ivec3(1,2,3)).value == em::ivec3(1,2,3));
+static_assert(wd3(em::ivec2(1,2)).value == em::ivec3(1,2,-3));
+static_assert(wd3(1,2,3).value == em::ivec3(1,2,3));
+static_assert(wd3(1,2).value == em::ivec3(1,2,-3));
+static_assert(wd2(em::ivec2(1,2)).value == em::ivec2(1,2));
+static_assert(wd2(1,2).value == em::ivec2(1,2));
+static_assert(wd2(1).value == em::ivec2(1,-2));
