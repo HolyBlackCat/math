@@ -145,3 +145,13 @@ static_assert(em::div_maxabs( 2, 3) ==  1);
 static_assert(em::div_maxabs( 3, 3) ==  1);
 static_assert(em::div_maxabs( 4, 3) ==  2);
 static_assert(em::div_maxabs(em::ivec2(5, 2), 3) == em::ivec2(2, 1));
+
+
+// ipow
+
+static_assert(em::ipow(3, 0) == 1);
+static_assert(em::ipow(3, 1) == 3);
+static_assert(em::ipow(3, 2) == 9);
+static_assert(em::ipow(3, 3) == 27);
+static_assert(em::ipow(3, -1) == 1); // For now negative powers are treated as zeroes.
+static_assert(em::ipow(em::ivec2(2, 3), 2) == em::ivec2(4, 9));

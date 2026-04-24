@@ -90,6 +90,7 @@ namespace em::Math
         EM_WRAP_ADL_FUNCTION(std, trunc)
         EM_WRAP_ADL_FUNCTION(std, modf)
         EM_WRAP_ADL_FUNCTION(std, nextafter)
+        EM_WRAP_ADL_FUNCTION(std, pow)
     }
 
     // Absolute value.
@@ -119,7 +120,10 @@ namespace em::Math
 
     // `nextafter()`.
     // Here we require the same type for both operands. Trying to be too clever sounds pointless here.
-    EM_SIMPLE_ELEMENTWISE_FUNCTOR( nextafter, (template <scalar T>), (const T &a, const T &b) EM_RETURNS(detail::Funcs::nextafter_(a, b)))
+    EM_SIMPLE_ELEMENTWISE_FUNCTOR( nextafter, (template <floating_point_scalar T>), (const T &a, const T &b) EM_RETURNS(detail::Funcs::nextafter_(a, b)))
+
+    // Floating-point power.
+    EM_SIMPLE_ELEMENTWISE_FUNCTOR( pow, (template <scalar T>), (const T &a, const T &b) EM_RETURNS(detail::Funcs::pow_(a, b)))
 
 
     // Integer division, modified for negative values of `a` to be periodic:
@@ -143,6 +147,22 @@ namespace em::Math
     )
 
 
+    // Computes `a ^ b`, where `b` is a non-negative integer.
+    // Negative `b` is treated as zero.
+    EM_SIMPLE_ELEMENTWISE_FUNCTOR( ipow,,
+        (scalar auto a, integral_scalar auto b)
+        {
+            decltype(a) ret = 1;
+            while (b > 0)
+            {
+                if (b & 1)
+                    ret *= a;
+                a *= a;
+                b >>= 1;
+            }
+            return ret;
+        }
+    )
 
     inline namespace Common
     {
@@ -173,5 +193,6 @@ namespace em::Math
         using Math::div_ex;
         using Math::mod_ex;
         using Math::div_maxabs;
+        using Math::ipow;
     }
 }
