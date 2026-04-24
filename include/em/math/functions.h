@@ -80,7 +80,10 @@ namespace em::Math
 
     namespace detail::Funcs
     {
-        EM_WRAP_ADL_FUNCTION(std, abs)
+        // EM_WRAP_ADL_FUNCTION(std, abs) // Not constexpr yet! Need to reimplement it myself:
+        constexpr auto abs(const scalar auto &s) EM_RETURNS(s >= 0 ? s : -s)
+        EM_WRAP_ADL_FUNCTION(Funcs, abs)
+
         EM_WRAP_ADL_FUNCTION(std, round)
         EM_WRAP_ADL_FUNCTION(std, floor)
         EM_WRAP_ADL_FUNCTION(std, ceil)
@@ -122,12 +125,22 @@ namespace em::Math
     // Integer division, modified for negative values of `a` to be periodic:
     //           i : -4  -3  -2  -1  0  1  2  3  4
     // div_ex(i,2) : -2  -2  -1  -1  0  0  1  1  2
+    // If `b` is negative, flips the sign of the result, just like regular division.
     EM_SIMPLE_ELEMENTWISE_FUNCTOR( div_ex,, (const integral_scalar auto &a, const integral_scalar auto &b) EM_RETURNS(a >= 0 ? a / b : (a + 1) / b - sign(b)) )
 
     // Integer division, modified for negative values of `a` to be periodic:
     //           i : -4  -3  -2  -1  0  1  2  3  4
     // div_ex(i,3) :  2   0   1   2  0  1  2  0  1
+    // The sign of `b` is ignored, just like what `%` does.
     EM_SIMPLE_ELEMENTWISE_FUNCTOR( mod_ex,, (const integral_scalar auto &a, const integral_scalar auto &b) EM_RETURNS(a >= 0 ? a % b : abs(b) - 1 + (a + 1) % b) )
+
+
+    // Performs division, rounding away from zero. Handles both integers and fractional numbers.
+    EM_SIMPLE_ELEMENTWISE_FUNCTOR( div_maxabs,
+        ,(const integral_scalar auto &a, const integral_scalar auto &b) EM_RETURNS((a + (abs(b) - 1) * sign(a)) / b)
+        EM_OVERLOAD
+        (template <scalar A, scalar B>),(const A &a, const B &b) EM_RETURNS(round_maxabs(larger_t<A, B>(a) / larger_t<A, B>(b)))
+    )
 
 
 
@@ -159,5 +172,6 @@ namespace em::Math
         using Math::nextafter;
         using Math::div_ex;
         using Math::mod_ex;
+        using Math::div_maxabs;
     }
 }

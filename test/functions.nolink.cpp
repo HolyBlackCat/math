@@ -81,3 +81,67 @@ static_assert([]{int i = 5; em::clamp_var_abs(i, 10); return i;}() == 5);
 static_assert([]{int i = -15; em::clamp_var_abs(i, 10); return i;}() == -10);
 static_assert([]{int i = 15; em::clamp_var_abs(i, 10); return i;}() == 10);
 static_assert([]{float i = std::numeric_limits<float>::quiet_NaN(); em::clamp_var_abs(i, 10); return i;}() == -10.f); // Arbitrary, to match the normal `clamp()`.
+
+
+// abs
+
+static_assert(em::abs(2) == 2);
+static_assert(em::abs(-2) == 2);
+static_assert(em::abs(em::ivec2(10, -20)) == em::ivec2(10, 20));
+
+
+// div_ex, mod_ex
+
+static_assert(em::div_ex(-4, 2) == -2);
+static_assert(em::div_ex(-3, 2) == -2);
+static_assert(em::div_ex(-2, 2) == -1);
+static_assert(em::div_ex(-1, 2) == -1);
+static_assert(em::div_ex( 0, 2) ==  0);
+static_assert(em::div_ex( 1, 2) ==  0);
+static_assert(em::div_ex( 2, 2) ==  1);
+static_assert(em::div_ex( 3, 2) ==  1);
+static_assert(em::div_ex( 4, 2) ==  2);
+
+static_assert(em::div_ex(-4, -2) ==  2);
+static_assert(em::div_ex(-3, -2) ==  2);
+static_assert(em::div_ex(-2, -2) ==  1);
+static_assert(em::div_ex(-1, -2) ==  1);
+static_assert(em::div_ex( 0, -2) ==  0);
+static_assert(em::div_ex( 1, -2) ==  0);
+static_assert(em::div_ex( 2, -2) == -1);
+static_assert(em::div_ex( 3, -2) == -1);
+static_assert(em::div_ex( 4, -2) == -2);
+
+static_assert(em::mod_ex(-4, 3) == 2);
+static_assert(em::mod_ex(-3, 3) == 0);
+static_assert(em::mod_ex(-2, 3) == 1);
+static_assert(em::mod_ex(-1, 3) == 2);
+static_assert(em::mod_ex( 0, 3) == 0);
+static_assert(em::mod_ex( 1, 3) == 1);
+static_assert(em::mod_ex( 2, 3) == 2);
+static_assert(em::mod_ex( 3, 3) == 0);
+static_assert(em::mod_ex( 4, 3) == 1);
+
+static_assert(em::mod_ex(-4, -3) == 2);
+static_assert(em::mod_ex(-3, -3) == 0);
+static_assert(em::mod_ex(-2, -3) == 1);
+static_assert(em::mod_ex(-1, -3) == 2);
+static_assert(em::mod_ex( 0, -3) == 0);
+static_assert(em::mod_ex( 1, -3) == 1);
+static_assert(em::mod_ex( 2, -3) == 2);
+static_assert(em::mod_ex( 3, -3) == 0);
+static_assert(em::mod_ex( 4, -3) == 1);
+
+
+// div_maxabs
+
+static_assert(em::div_maxabs(-4, 3) == -2);
+static_assert(em::div_maxabs(-3, 3) == -1);
+static_assert(em::div_maxabs(-2, 3) == -1);
+static_assert(em::div_maxabs(-1, 3) == -1);
+static_assert(em::div_maxabs( 0, 3) ==  0);
+static_assert(em::div_maxabs( 1, 3) ==  1);
+static_assert(em::div_maxabs( 2, 3) ==  1);
+static_assert(em::div_maxabs( 3, 3) ==  1);
+static_assert(em::div_maxabs( 4, 3) ==  2);
+static_assert(em::div_maxabs(em::ivec2(5, 2), 3) == em::ivec2(2, 1));

@@ -112,28 +112,28 @@ namespace em::Math
 }
 
 // Like `EM_SIMPLE_FUNCTOR()`, but can also act elementwise.
-#define EM_SIMPLE_ELEMENTWISE_FUNCTOR(name_, deduced_targs_and_extras_, ...) EM_SIMPLE_ELEMENTWISE_FUNCTOR_EXT(name_, (), (EM_1), deduced_targs_and_extras_, __VA_ARGS__)
+#define EM_SIMPLE_ELEMENTWISE_FUNCTOR(name_, /*deduced_targs_and_extras_,*/ ...) EM_SIMPLE_ELEMENTWISE_FUNCTOR_EXT(name_, /*targs*/, /*type_pattern*/, EM_IMPLICIT_SEQ((__VA_ARGS__)))
 
 // Like `EM_SIMPLE_FUNCTOR()`, but can also act elementwise (only on the same kind of objects).
-#define EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR(name_, deduced_targs_and_extras_, ...) EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR_EXT(name_, (), (EM_1), deduced_targs_and_extras_, __VA_ARGS__)
+#define EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR(name_, /*deduced_targs_and_extras_,*/ ...) EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR_EXT(name_, /*targs*/, /*type_pattern*/, EM_IMPLICIT_SEQ((__VA_ARGS__)))
 
 // The extended version of `EM_SIMPLE_ELEMENTWISE_FUNCTOR()`, see `EM_SIMPLE_FUNCTOR_EXT()`. This is primarily for making templates.
-#define EM_SIMPLE_ELEMENTWISE_FUNCTOR_EXT(name_, template_head_, type_pattern_, deduced_targs_and_extras_, ...) DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(ApplyElementwiseFn, {}, name_, template_head_, type_pattern_, deduced_targs_and_extras_, __VA_ARGS__)
+#define EM_SIMPLE_ELEMENTWISE_FUNCTOR_EXT(name_, template_head_, type_pattern_, /*deduced_targs_and_extras_,*/ ...) DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(ApplyElementwiseFn, {}, name_, template_head_, type_pattern_, EM_IMPLICIT_SEQ((__VA_ARGS__)))
 
 // The extended version of `EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR()`, see `EM_SIMPLE_FUNCTOR_EXT()`. This is primarily for making templates.
-#define EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR_EXT(name_, template_head_, type_pattern_, deduced_targs_and_extras_, ...) DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(ApplyElementwiseFn, ::same_kind, name_, template_head_, type_pattern_, deduced_targs_and_extras_, __VA_ARGS__)
+#define EM_SIMPLE_ELEMENTWISE_SAME_KIND_FUNCTOR_EXT(name_, template_head_, type_pattern_, /*deduced_targs_and_extras_,*/ ...) DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(ApplyElementwiseFn, ::same_kind, name_, template_head_, type_pattern_, EM_IMPLICIT_SEQ((__VA_ARGS__)))
 
-#define EM_SIMPLE_ANY_OF_FUNCTOR(name_, deduced_targs_and_extras_, ...)           EM_SIMPLE_ANY_OF_FUNCTOR_EXT          (name_, (), (EM_1), deduced_targs_and_extras_, __VA_ARGS__)
-#define EM_SIMPLE_ANY_OF_SAME_KIND_FUNCTOR(name_, deduced_targs_and_extras_, ...) EM_SIMPLE_ANY_OF_SAME_KIND_FUNCTOR_EXT(name_, (), (EM_1), deduced_targs_and_extras_, __VA_ARGS__)
-#define EM_SIMPLE_ANY_OF_FUNCTOR_EXT(name_, template_head_, type_pattern_, deduced_targs_and_extras_, ...)           DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(AnyOfElementwiseFn, {}, name_, template_head_, type_pattern_, deduced_targs_and_extras_, __VA_ARGS__)
-#define EM_SIMPLE_ANY_OF_SAME_KIND_FUNCTOR_EXT(name_, template_head_, type_pattern_, deduced_targs_and_extras_, ...) DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(AnyOfElementwiseFn, ::same_kind, name_, template_head_, type_pattern_, deduced_targs_and_extras_, __VA_ARGS__)
+#define EM_SIMPLE_ANY_OF_FUNCTOR(name_, /*deduced_targs_and_extras_,*/ ...)           EM_SIMPLE_ANY_OF_FUNCTOR_EXT          (name_, /*targs*/, /*type_pattern*/, EM_IMPLICIT_SEQ((__VA_ARGS__)))
+#define EM_SIMPLE_ANY_OF_SAME_KIND_FUNCTOR(name_, /*deduced_targs_and_extras_,*/ ...) EM_SIMPLE_ANY_OF_SAME_KIND_FUNCTOR_EXT(name_, /*targs*/, /*type_pattern*/, EM_IMPLICIT_SEQ((__VA_ARGS__)))
+#define EM_SIMPLE_ANY_OF_FUNCTOR_EXT(name_, template_head_, type_pattern_, /*deduced_targs_and_extras_,*/ ...)           DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(AnyOfElementwiseFn, {}, name_, template_head_, type_pattern_, EM_IMPLICIT_SEQ((__VA_ARGS__)))
+#define EM_SIMPLE_ANY_OF_SAME_KIND_FUNCTOR_EXT(name_, template_head_, type_pattern_, /*deduced_targs_and_extras_,*/ ...) DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(AnyOfElementwiseFn, ::same_kind, name_, template_head_, type_pattern_, EM_IMPLICIT_SEQ((__VA_ARGS__)))
 
-#define EM_SIMPLE_ALL_OF_FUNCTOR(name_, deduced_targs_and_extras_, ...)           EM_SIMPLE_ALL_OF_FUNCTOR_EXT          (name_, (), (EM_1), deduced_targs_and_extras_, __VA_ARGS__)
-#define EM_SIMPLE_ALL_OF_SAME_KIND_FUNCTOR(name_, deduced_targs_and_extras_, ...) EM_SIMPLE_ALL_OF_SAME_KIND_FUNCTOR_EXT(name_, (), (EM_1), deduced_targs_and_extras_, __VA_ARGS__)
-#define EM_SIMPLE_ALL_OF_FUNCTOR_EXT(name_, template_head_, type_pattern_, deduced_targs_and_extras_, ...)           DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(AllOfElementwiseFn, {}, name_, template_head_, type_pattern_, deduced_targs_and_extras_, __VA_ARGS__)
-#define EM_SIMPLE_ALL_OF_SAME_KIND_FUNCTOR_EXT(name_, template_head_, type_pattern_, deduced_targs_and_extras_, ...) DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(AllOfElementwiseFn, ::same_kind, name_, template_head_, type_pattern_, deduced_targs_and_extras_, __VA_ARGS__)
+#define EM_SIMPLE_ALL_OF_FUNCTOR(name_, /*deduced_targs_and_extras_,*/ ...)           EM_SIMPLE_ALL_OF_FUNCTOR_EXT          (name_, /*targs*/, /*type_pattern*/, EM_IMPLICIT_SEQ((__VA_ARGS__)))
+#define EM_SIMPLE_ALL_OF_SAME_KIND_FUNCTOR(name_, /*deduced_targs_and_extras_,*/ ...) EM_SIMPLE_ALL_OF_SAME_KIND_FUNCTOR_EXT(name_, /*targs*/, /*type_pattern*/, EM_IMPLICIT_SEQ((__VA_ARGS__)))
+#define EM_SIMPLE_ALL_OF_FUNCTOR_EXT(name_, template_head_, type_pattern_, /*deduced_targs_and_extras_,*/ ...)           DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(AllOfElementwiseFn, {}, name_, template_head_, type_pattern_, EM_IMPLICIT_SEQ((__VA_ARGS__)))
+#define EM_SIMPLE_ALL_OF_SAME_KIND_FUNCTOR_EXT(name_, template_head_, type_pattern_, /*deduced_targs_and_extras_,*/ ...) DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(AllOfElementwiseFn, ::same_kind, name_, template_head_, type_pattern_, EM_IMPLICIT_SEQ((__VA_ARGS__)))
 
 
 // This is used internally to implement the macros above.
-#define DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(functor_, flag_, name_, template_head_, type_pattern_, deduced_targs_and_extras_, ...) \
-    EM_SIMPLE_FUNCTOR_EXT(name_, template_head_, (::em::Math::functor_<EM_UNWRAP_CODE(type_pattern_), ::em::Math::ApplyElementwiseFlags flag_>), deduced_targs_and_extras_, __VA_ARGS__)
+#define DETAIL_EM_SIMPLE_ELEMENTWISE_FUNCTOR(functor_, flag_, name_, template_head_, type_pattern_, /*deduced_targs_and_extras_,*/ ...) \
+    EM_SIMPLE_FUNCTOR_EXT(name_, template_head_, (::em::Math::functor_<EM_UNWRAP_CODE(EM_FALLBACK_IF_EMPTY(type_pattern_)((EM_1))), ::em::Math::ApplyElementwiseFlags flag_>), EM_IMPLICIT_SEQ((__VA_ARGS__)))
