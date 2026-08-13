@@ -83,6 +83,57 @@ static_assert([]{int i = 15; em::clamp_var_abs(i, 10); return i;}() == 10);
 static_assert([]{float i = std::numeric_limits<float>::quiet_NaN(); em::clamp_var_abs(i, 10); return i;}() == -10.f); // Arbitrary, to match the normal `clamp()`.
 
 
+// clamp{,_low,_high,_abs} with implicit bounds
+
+static_assert(em::clamp_low(-2) == 0);
+static_assert(em::clamp_low(-1) == 0);
+static_assert(em::clamp_low( 0) == 0);
+static_assert(em::clamp_low( 1) == 1);
+static_assert(em::clamp_low( 2) == 2);
+
+static_assert(em::clamp_high(-2) == -2);
+static_assert(em::clamp_high(-1) == -1);
+static_assert(em::clamp_high( 0) ==  0);
+static_assert(em::clamp_high( 1) ==  1);
+static_assert(em::clamp_high( 2) ==  1);
+
+static_assert(em::clamp(-2) == 0);
+static_assert(em::clamp(-1) == 0);
+static_assert(em::clamp( 0) == 0);
+static_assert(em::clamp( 1) == 1);
+static_assert(em::clamp( 2) == 1);
+
+static_assert(em::clamp_abs(-2) == -1);
+static_assert(em::clamp_abs(-1) == -1);
+static_assert(em::clamp_abs( 0) ==  0);
+static_assert(em::clamp_abs( 1) ==  1);
+static_assert(em::clamp_abs( 2) ==  1);
+
+static_assert([]{int i = -2; em::clamp_var_low(i); return i == 0;}());
+static_assert([]{int i = -1; em::clamp_var_low(i); return i == 0;}());
+static_assert([]{int i =  0; em::clamp_var_low(i); return i == 0;}());
+static_assert([]{int i =  1; em::clamp_var_low(i); return i == 1;}());
+static_assert([]{int i =  2; em::clamp_var_low(i); return i == 2;}());
+
+static_assert([]{int i = -2; em::clamp_var_high(i); return i == -2;}());
+static_assert([]{int i = -1; em::clamp_var_high(i); return i == -1;}());
+static_assert([]{int i =  0; em::clamp_var_high(i); return i ==  0;}());
+static_assert([]{int i =  1; em::clamp_var_high(i); return i ==  1;}());
+static_assert([]{int i =  2; em::clamp_var_high(i); return i ==  1;}());
+
+static_assert([]{int i = -2; em::clamp_var(i); return i == 0;}());
+static_assert([]{int i = -1; em::clamp_var(i); return i == 0;}());
+static_assert([]{int i =  0; em::clamp_var(i); return i == 0;}());
+static_assert([]{int i =  1; em::clamp_var(i); return i == 1;}());
+static_assert([]{int i =  2; em::clamp_var(i); return i == 1;}());
+
+static_assert([]{int i = -2; em::clamp_var_abs(i); return i == -1;}());
+static_assert([]{int i = -1; em::clamp_var_abs(i); return i == -1;}());
+static_assert([]{int i =  0; em::clamp_var_abs(i); return i ==  0;}());
+static_assert([]{int i =  1; em::clamp_var_abs(i); return i ==  1;}());
+static_assert([]{int i =  2; em::clamp_var_abs(i); return i ==  1;}());
+
+
 // abs
 
 static_assert(em::abs(2) == 2);
@@ -155,3 +206,50 @@ static_assert(em::ipow(3, 2) == 9);
 static_assert(em::ipow(3, 3) == 27);
 static_assert(em::ipow(3, -1) == 1); // For now negative powers are treated as zeroes.
 static_assert(em::ipow(em::ivec2(2, 3), 2) == em::ivec2(4, 9));
+
+
+// smoothstep
+
+static_assert(em::smoothstep(0.f) == 0.f);
+static_assert(em::smoothstep(1.f) == 1.f);
+
+
+// mix
+
+static_assert(em::mix(0, 10, 20) == 10);
+static_assert(em::mix(1, 10, 20) == 20);
+
+
+// sort_two[_var]
+
+static_assert(em::sort_two(10, 20) == std::pair(10, 20));
+static_assert(em::sort_two(20, 10) == std::pair(10, 20));
+static_assert(em::sort_two(em::ivec2(20, 30), em::ivec2(10, 40)) == std::pair(em::ivec2(10, 30), em::ivec2(20, 40)));
+
+static_assert([]{int a = 10, b = 20; em::sort_two_var(a, b); return a == 10 && b == 20;}());
+static_assert([]{int a = 20, b = 10; em::sort_two_var(a, b); return a == 10 && b == 20;}());
+static_assert([]{em::ivec2 a(20, 30), b(10, 40); em::sort_two_var(a, b); return a == em::ivec2(10, 30) && b == em::ivec2(20, 40);}());
+
+// The non-`_var` version can handle different types:
+static_assert(em::sort_two(1, 2.3f) == std::pair(1.f, 2.3f));
+static_assert(em::sort_two(em::ivec2(20, 30), em::fvec2(10.1f, 40.4f)) == std::pair(em::fvec2(10.1f, 30.f), em::fvec2(20.f, 40.4f)));
+
+
+
+// ----- Non-`Common` functions
+
+static_assert(std::is_same_v<decltype(em::Math::next_value_towards(10, 20)), int>);
+static_assert(em::Math::next_value_towards(10, 20) == 11);
+static_assert(em::Math::next_value_towards(10, 0) == 9);
+static_assert(em::Math::next_value_towards(em::ivec2(20, 10), 15) == em::ivec2(19, 11));
+
+static_assert(std::is_same_v<decltype(em::Math::next_value_towards(10.f, 20)), float>);
+static_assert(std::is_same_v<decltype(em::Math::next_value_towards(10.f, 20.f)), float>);
+// Those are not constexpr sadly.
+// static_assert(em::Math::next_value_towards(10, 20.f) == );
+// static_assert(em::Math::next_value_towards(10.5f, 20) == );
+// static_assert(em::Math::next_value_towards(10.5f, 20.5f) == );
+
+static_assert(em::Math::next_value(10) == 11);
+static_assert(em::Math::prev_value(10) == 9);
+static_assert(em::Math::next_value(em::ivec2(10, 20)) == em::ivec2(11, 21));

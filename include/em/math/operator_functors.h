@@ -28,14 +28,14 @@ namespace em::Math::Ops
     namespace detail
     {
         template <typename T>
-        concept BuiltinScalar = std::is_arithmetic_v<std::decay_t<T>>;
+        concept BuiltinScalar = std::is_arithmetic_v<std::remove_cvref_t<T>>;
 
         // Those scalars get promoted by the standard operators.
         template <typename T>
         concept BuiltinScalarSmall = BuiltinScalar<T> && sizeof(T) < sizeof(int);
 
         template <typename T, typename U>
-        concept BothBuiltinScalarssAndAtLeastOneSmall = BuiltinScalar<T> && BuiltinScalar<U> && (BuiltinScalarSmall<T> || BuiltinScalarSmall<U>);
+        concept BothBuiltinScalarsAndAtLeastOneSmall = BuiltinScalar<T> && BuiltinScalar<U> && (BuiltinScalarSmall<T> || BuiltinScalarSmall<U>);
     }
 
     #define DETAIL_EM_X(name_, op_) \
@@ -47,7 +47,7 @@ namespace em::Math::Ops
             requires requires{auto(op_ decltype(value)(value));} \
             { \
                 if constexpr (detail::BuiltinScalarSmall<T>) \
-                    return std::decay_t<T>(op_ value); \
+                    return std::remove_cvref_t<T>(op_ value); \
                 else \
                     return op_ decltype(value)(value); \
             } \
@@ -57,27 +57,13 @@ namespace em::Math::Ops
 
     namespace detail
     {
-        // Promote types smaller than `int` to `int` or `unsigned int`. Unlike standard promotion, this preserves the signedness.
-        // This helps prevent UB overflow when multiplying two big `unsigned short`s.
-        template <BuiltinScalarSmall T>
-        [[nodiscard]] EM_TINY constexpr auto PromoteSameSign(T &&t) noexcept
-        {
-            if constexpr (std::is_signed_v<std::remove_reference_t<T>>)
-                return (int)t;
-            else
-                return (unsigned int)t;
-        }
-        // The identity overload for types that don't need promoting.
-        template <typename T>
-        [[nodiscard]] EM_TINY constexpr T &&PromoteSameSign(T &&t) noexcept {return (T &&)t;}
-
         // Those disable operators on builtin scalars if they involve weird conversions.
 
         template <typename T, typename U>
-        concept AllowBinaryOperator = !std::is_arithmetic_v<std::decay_t<T>> || have_larger_type<std::decay_t<T>, std::decay_t<U>>;
+        concept AllowBinaryOperator = !std::is_arithmetic_v<std::remove_cvref_t<T>> || have_larger_type<std::remove_cvref_t<T>, std::remove_cvref_t<U>>;
 
         template <typename T, typename U>
-        concept AllowBinaryOperatorAssign = !std::is_arithmetic_v<std::decay_t<T>> || can_safely_convert_to<std::decay_t<U>, std::decay_t<T>>;
+        concept AllowBinaryOperatorAssign = !std::is_arithmetic_v<std::remove_cvref_t<T>> || can_safely_convert_to<std::remove_cvref_t<U>, std::remove_cvref_t<T>>;
     }
 
     #define DETAIL_EM_X(name_, op_, ...) \
@@ -88,10 +74,14 @@ namespace em::Math::Ops
             noexcept(noexcept(auto(decltype(t)(t) op_ decltype(u)(u)))) \
             requires requires{auto(decltype(t)(t) op_ decltype(u)(u));} \
             { \
-                if constexpr (detail::BothBuiltinScalarssAndAtLeastOneSmall<T, U>) \
-                    return EM_CAT(DETAIL_EM_X_, __VA_ARGS__)(op_); \
+                if constexpr (detail::BothBuiltinScalarsAndAtLeastOneSmall<T, U>) \
+                { \
+                    EM_CAT(DETAIL_EM_X_, __VA_ARGS__)(op_); \
+                } \
                 else \
+                { \
                     return decltype(t)(t) op_ decltype(u)(u); \
+                } \
             } \
         }; \
         struct EM_CAT(name_, Assign) \
@@ -102,15 +92,26 @@ namespace em::Math::Ops
             noexcept(noexcept(t EM_CAT(op_,=) decltype(u)(u))) \
             requires requires{auto(t EM_CAT(op_,=) decltype(u)(u));} \
             { \
-                if constexpr (detail::BothBuiltinScalarssAndAtLeastOneSmall<T, U>) \
-                    t = std::decay_t<T>(detail::PromoteSameSign(t) op_ detail::PromoteSameSign(u)); \
+                if constexpr (detail::BothBuiltinScalarsAndAtLeastOneSmall<T, U>) \
+                { \
+                    using LP = Meta::Scalars::PromoteWithSameSign<larger_t<std::remove_cvref_t<T>, std::remove_cvref_t<U>>>; \
+                    t = std::remove_cvref_t<T>(LP(t) op_ LP(u)); \
+                } \
                 else \
+                { \
                     t EM_CAT(op_,=) decltype(u)(u); \
+                } \
                 return t; \
             } \
         };
-    #define DETAIL_EM_X_(op_) larger_t<std::decay_t<T>, std::decay_t<U>>(detail::PromoteSameSign(t) op_ detail::PromoteSameSign(u))
-    #define DETAIL_EM_X_Shift(op_) T(detail::PromoteSameSign(t) op_ u)
+    #define DETAIL_EM_X_(op_) \
+        using L = larger_t<std::remove_cvref_t<T>, std::remove_cvref_t<U>>; \
+        using LP = Meta::Scalars::PromoteWithSameSign<L>; \
+        return L(LP(t) op_ LP(u))
+    #define DETAIL_EM_X_Shift(op_) \
+        using L = std::remove_cvref_t<T>; \
+        using LP = Meta::Scalars::PromoteWithSameSign<L>; \
+        return L(LP(t) op_ u)
     #define DETAIL_EM_X2_() requires detail::AllowBinaryOperator<T, U>
     #define DETAIL_EM_X2_Shift()
     #define DETAIL_EM_X3_() requires detail::AllowBinaryOperatorAssign<T, U>

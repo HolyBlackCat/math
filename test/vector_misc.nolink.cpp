@@ -7,6 +7,7 @@ static_assert(std::is_same_v<em::Math::Common::ivec2, em::Math::vec<int, 2>>);
 
 // `larger_t`.
 static_assert(std::is_same_v<em::Math::larger_t<em::Math::vec<int, 3>>, em::Math::vec<int, 3>>);
+static_assert(std::is_same_v<em::Math::larger_t<em::Math::vec<int, 3>>, em::Math::vec<int, 3>>);
 static_assert(std::is_same_v<em::Math::larger_t<em::Math::vec<int, 3>, float>, em::Math::vec<float, 3>>);
 static_assert(std::is_same_v<em::Math::larger_t<em::Math::vec<float, 3>, int>, em::Math::vec<float, 3>>);
 static_assert(std::is_same_v<em::Math::larger_t<float, em::Math::vec<int, 3>>, em::Math::vec<float, 3>>);

@@ -7,6 +7,12 @@
 #include "em/math/scalar.h"
 
 #include <cmath>
+#include <limits>
+#include <utility>
+
+// Common functions start here.
+// Don't forget to add anything you add here to `inline namespace Common` at the bottom.
+// Lower in the file we have uncommon functions.
 
 namespace em::Math
 {
@@ -44,37 +50,60 @@ namespace em::Math
     EM_SIMPLE_ELEMENTWISE_FUNCTOR( clamp_low,
         (template <scalar T, scalar A, typename L = larger_t<T, A>>),
         (const T &target, const A &low) EM_RETURNS(target >= low ? L(target) : L(low))
+        EM_OVERLOAD // Clamp to a fixed range `0..`.
+        (template <scalar T>),
+        (const T &target) EM_RETURNS(target >= T{} ? target : T{})
     )
     EM_SIMPLE_ELEMENTWISE_FUNCTOR( clamp_high,
         (template <scalar T, scalar A, typename L = larger_t<T, A>>),
         (const T &target, const A &high) EM_RETURNS(target <= high ? L(target) : L(high))
+        EM_OVERLOAD // Clamp to a fixed range `..1`.
+        (template <scalar T>),
+        (const T &target) EM_RETURNS(target <= T(1) ? target : T(1))
     )
     EM_SIMPLE_ELEMENTWISE_FUNCTOR( clamp,
         (template <scalar T, scalar A, scalar B, typename L = larger_t<T, A, B>>),
         (const T &target, const A &low, const B &high) EM_RETURNS(target >= low ? (target <= high ? L(target) : L(high)) : L(low))
+        EM_OVERLOAD // Clamp to a fixed range `0..1`.
+        (template <scalar T>),
+        (const T &target) EM_RETURNS(target >= T{} ? (target <= T(1) ? target : T(1)) : T{})
     )
-    EM_SIMPLE_ELEMENTWISE_FUNCTOR( clamp_abs,,
-        (const auto &target, const auto &abs_limit) EM_RETURNS(clamp(target, -abs_limit, abs_limit))
+    EM_SIMPLE_ELEMENTWISE_FUNCTOR( clamp_abs,
+        ,(const auto &target, const auto &abs_limit) EM_RETURNS(clamp(target, -abs_limit, abs_limit))
+        EM_OVERLOAD // Clamp to a fixed range `-1..1`.
+        (template <scalar T>),
+        (const T &target) EM_RETURNS(clamp(target, T(-1), T(1)))
     )
-
 
     // Takes a variable by reference and clamps it from one or both sides.
     // Note that NaN gets replaced with the bound, so we need to be careful about how we compare things.
     EM_SIMPLE_ELEMENTWISE_FUNCTOR( clamp_var_low,
         (template <scalar T, scalar A> requires can_safely_convert_to<A, T>),
         (T &target, const A &low) EM_RETURNS(target >= low ? void() : void(target = low))
+        EM_OVERLOAD // Clamp to a fixed range `0..`.
+        (template <scalar T>),
+        (T &target) EM_RETURNS(target >= T{} ? void() : void(target = T{}))
     )
     EM_SIMPLE_ELEMENTWISE_FUNCTOR( clamp_var_high,
         (template <scalar T, scalar A> requires can_safely_convert_to<A, T>),
         (T &target, const A &high) EM_RETURNS(target <= high ? void() : void(target = high))
+        EM_OVERLOAD // Clamp to a fixed range `1..`.
+        (template <scalar T>),
+        (T &target) EM_RETURNS(target <= T(1) ? void() : void(target = T(1)))
     )
     EM_SIMPLE_ELEMENTWISE_FUNCTOR( clamp_var,
-        (template <scalar T, scalar A, scalar B> requires can_safely_convert_to<A, T> && can_safely_convert_to<B, T>),
         // This isn't implemented in terms of `clamp_var_{high,low}` to better match how `clamp()` behaves with inverted bounds and NaN.
+        (template <scalar T, scalar A, scalar B> requires can_safely_convert_to<A, T> && can_safely_convert_to<B, T>),
         (T &target, const A &low, const B &high) EM_RETURNS(target >= low ? (target <= high ? void() : void(target = high)) : void(target = low))
+        EM_OVERLOAD // Clamp to a fixed range `0..1`.
+        (template <scalar T>),
+        (T &target) EM_RETURNS(target >= T{} ? (target <= T(1) ? void() : void(target = T(1))) : void(target = T{}))
     )
     EM_SIMPLE_ELEMENTWISE_FUNCTOR( clamp_var_abs,,
         (scalar auto &target, const scalar auto &abs_limit) EM_RETURNS(clamp_var(target, -abs_limit, abs_limit))
+        EM_OVERLOAD // Clamp to a fixed range `-1..1`.
+        (template <scalar T>),
+        (T &target) EM_RETURNS(clamp_var(target, T(-1), T(1)))
     )
 
 
@@ -143,13 +172,15 @@ namespace em::Math
     EM_SIMPLE_ELEMENTWISE_FUNCTOR( div_maxabs,
         ,(const integral_scalar auto &a, const integral_scalar auto &b) EM_RETURNS((a + (abs(b) - 1) * sign(a)) / b)
         EM_OVERLOAD
-        (template <scalar A, scalar B>),(const A &a, const B &b) EM_RETURNS(round_maxabs(larger_t<A, B>(a) / larger_t<A, B>(b)))
+        (template <scalar A, scalar B, typename L = larger_t<A, B>>),
+        (const A &a, const B &b) EM_RETURNS(round_maxabs(L(a) / L(b)))
     )
 
 
     // Computes `a ^ b`, where `b` is a non-negative integer.
     // Negative `b` is treated as zero.
     EM_SIMPLE_ELEMENTWISE_FUNCTOR( ipow,,
+        // This implementation could handle vector `a` transparently, but it's easier to use `ELEMENTWISE_FUNCTOR` to accept other types that may not have the right overloaded operators.
         (scalar auto a, integral_scalar auto b)
         {
             decltype(a) ret = 1;
@@ -163,6 +194,38 @@ namespace em::Math
             return ret;
         }
     )
+
+
+    // Computes the smooth step function. Doesn't clamp `x`.
+    EM_SIMPLE_ELEMENTWISE_FUNCTOR( smoothstep,,
+        // This implementation could handle vectors transparently, but it's easier to use `ELEMENTWISE_FUNCTOR` to accept other types that may not have the right overloaded operators.
+        (const floating_point_scalar auto &x) EM_RETURNS( (3 - 2*x) * x*x )
+    )
+
+
+    // Computes the smooth step function. Doesn't clamp `x`.
+    EM_SIMPLE_ELEMENTWISE_FUNCTOR( mix,
+        // This implementation could handle vectors transparently, but it's easier to use `ELEMENTWISE_FUNCTOR` to accept other types that may not have the right overloaded operators.
+        (template <scalar F, scalar A, scalar B, typename L = larger_t<A, B>>),
+        (const F &factor, const A &a, const B &b) EM_RETURNS( L(a) * (F(1)-factor) + L(b) * factor )
+    )
+
+    // Swaps the elements of `a` and `b` such that every element of `a` is less or equal than the respective element of `b`.
+    EM_SIMPLE_ELEMENTWISE_FUNCTOR( sort_two_var,
+        (template <typename T>), // This doesn't even require scalars. So for this to function correctly, vector comparisons must not return bool.
+        (T &a, T &b) EM_RETURNS( b < a ? std::swap(a, b) : void() )
+    )
+
+    // Returns `std::pair<T, T>` such that the first element is smaller or equal to the second.
+    // Note, this is not elementwise, since it must return a single `std::pair` and not a vector of those.
+    EM_SIMPLE_FUNCTOR( sort_two,
+        (template <typename T>),
+        (T a, T b) EM_RETURNS( sort_two_var(a, b), std::pair<T, T>(std::move(a), std::move(b)) )
+        EM_OVERLOAD // Handle different parameter types. Turns out overloading like this is fine.
+        (template <typename A, typename B, typename L = larger_t<A, B>>),
+        (A &&a, B &&b) EM_RETURNS( Fn_sort_two::operator()(Meta::static_cast_or_return_ref<L>(EM_FWD(a)), Meta::static_cast_or_return_ref<L>(EM_FWD(b))) )
+    )
+
 
     inline namespace Common
     {
@@ -190,9 +253,44 @@ namespace em::Math
         using Math::frac;
         using Math::modf;
         using Math::nextafter;
+        using Math::pow;
         using Math::div_ex;
         using Math::mod_ex;
         using Math::div_maxabs;
         using Math::ipow;
+        using Math::smoothstep;
+        using Math::mix;
+        using Math::sort_two;
+        using Math::sort_two_var;
     }
+}
+
+// Uncommon functions start here. Those don't get added to `inline namespace Common`.
+
+namespace em::Math
+{
+    // Like `nextafter()`, but works with integers as well.
+    // `next_value_towards(a, b)` returns the next representable value after `a` in the direction towards `b`.
+    // `b` must be convertible to `a` without narrowing. The return type matches that of `a`.
+    EM_SIMPLE_ELEMENTWISE_FUNCTOR( next_value_towards,
+        (template <floating_point_scalar A, can_safely_convert_to<A> B>),
+        (const A &value, const B &target) EM_RETURNS( nextafter(value, A(target)) )
+        EM_OVERLOAD
+        (template <integral_scalar A, can_safely_convert_to<A> B>),
+        (const A &value, const B &target) EM_RETURNS( value + diffsign(A(target), value) ) // The plain `sign()` could overflow here.
+    )
+
+    // Returns the next representable value.
+    // Refuses to increment the largest representable value, and returns it unchanged.
+    // If asked to increment infinity in either direction, returns the closest representable value.
+    // If given NaN, returns NaN.
+    EM_SIMPLE_ELEMENTWISE_FUNCTOR( next_value,
+        (template <scalar T>),
+        (const T &value) EM_RETURNS( next_value_towards(value, std::numeric_limits<T>::max()) )
+    )
+    // Same, but returns the previous representable value.
+    EM_SIMPLE_ELEMENTWISE_FUNCTOR( prev_value,
+        (template <scalar T>),
+        (const T &value) EM_RETURNS( next_value_towards(value, std::numeric_limits<T>::lowest()) )
+    )
 }

@@ -27,7 +27,7 @@ template <typename A, typename B>
 concept CanAdd = requires{em::Math::Ops::Add{}(std::declval<A>(), std::declval<B>());};
 static_assert(!CanAdd<int, unsigned int>);
 static_assert(!CanAdd<short, unsigned int>);
-static_assert(!CanAdd<int, unsigned short>);
+static_assert(CanAdd<int, unsigned short>);
 static_assert(!CanAdd<int, std::string>);
 
 // Compound assignment.
@@ -49,7 +49,7 @@ static_assert(CanAddAssign<std::string &, std::string>);
 static_assert(!CanAddAssign<std::string, std::string>); // Force-reject rvalue lhs everywhere, even if the underlying type supports it.
 // Ban mixed signedness:
 static_assert(!CanAddAssign<short &, unsigned int>);
-static_assert(!CanAddAssign<int &, unsigned short>);
+static_assert(CanAddAssign<int &, unsigned short>);
 static_assert(!CanAddAssign<int &, std::string>);
 // Mixed precision:
 static_assert(CanAddAssign<int &, short>); // Increases precision.

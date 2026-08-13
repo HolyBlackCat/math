@@ -289,9 +289,9 @@ namespace em::Math
     // Implement `larger_t` logic for vectors.
     namespace Customize
     {
-        template <Meta::cvref_unqualified A, Meta::cvref_unqualified B>
-        requires (vector<A> || vector<B>) && have_common_vec_size<A, B> && have_larger_type<vec_base_t<A>, vec_base_t<B>>
-        struct LargerType<A, B> {using type = vec<larger_t<vec_base_t<A>, vec_base_t<B>>, common_vec_size<A, B>>;};
+        template <Meta::cvref_unqualified ...P>
+        requires CustomLargerType<P...> && (vector<P> || ...) && have_common_vec_size<P...> && have_larger_type<vec_base_t<P>...>
+        struct LargerType<P...> {using type = vec<larger_t<vec_base_t<P>...>, common_vec_size<P...>>;};
     }
 }
 
