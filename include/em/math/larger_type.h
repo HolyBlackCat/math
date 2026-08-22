@@ -1,6 +1,5 @@
 #pragma once
 
-#include "em/math/scalar.h"
 #include "em/meta/common.h"
 #include "em/meta/scalar_types.h"
 

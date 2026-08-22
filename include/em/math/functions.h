@@ -1,10 +1,14 @@
 #pragma once
 
+#include "em/macros/portable/tiny_func.h"
+#include "em/macros/utils/forward.h"
 #include "em/macros/utils/returns.h"
 #include "em/math/apply_elementwise.h"
 #include "em/math/larger_type.h"
 #include "em/math/namespaces.h"
 #include "em/math/scalar.h"
+#include "em/math/vector_traits.h"
+#include "em/meta/casts.h"
 
 #include <cmath>
 #include <limits>
@@ -13,6 +17,8 @@
 // Common functions start here.
 // Don't forget to add anything you add here to `inline namespace Common` at the bottom.
 // Lower in the file we have uncommon functions.
+
+// For now we don't include `em/math/vector.h` here, and only include `em/math/vector_traits.h`. This in theory allows accepting third-party vector types.
 
 namespace em::Math
 {
@@ -227,6 +233,38 @@ namespace em::Math
     )
 
 
+    // Min/max:
+
+    namespace detail::MinMax
+    {
+        template <bool IsMax>
+        struct FnMinMaxLow
+        {
+            // One argument -> return as is by value.
+            // This verison accepts types that are not comparable too. Primarily to support vectors. We could check for single-argument `apply_elementwise()`, but who cares.
+            // Maybe it is actually better to continue allowing this to support types that don't have `apply_elementwise()`.
+            [[nodiscard]] EM_TINY constexpr auto operator()(auto &&a) const EM_RETURNS(auto(EM_FWD(a)))
+            // Two arguments of the same type ignoring cvref -> pick the smallest one.
+            [[nodiscard]] EM_TINY constexpr auto operator()(auto &&a, auto &&b) const EM_RETURNS(auto((a < b ? !IsMax : IsMax) ? EM_FWD(a) : EM_FWD(b)))
+            // Three+ arguments -> fold.
+            // Recursing this way needs `(*this)(...)`. Static call operators don't work, and free functions can't recurse into themselves using `EM_RETURNS(...)`.
+            [[nodiscard]] EM_TINY constexpr auto operator()(auto &&a, auto &&b, auto &&c, auto &&... d) const EM_RETURNS((*this)(EM_FWD(a), (*this)(EM_FWD(b), EM_FWD(c), EM_FWD(d)...)))
+        };
+    }
+
+    // A functor class implementing `min()` and `max()`. We declare those as variables below.
+    template <bool IsMax>
+    struct FnMinMax
+    {
+        // Convert to the common `larger_t` if needed and forward to the underlying implementation.
+        template <typename ...P>
+        [[nodiscard]] EM_TINY constexpr auto operator()(P &&... params) const EM_RETURNS( detail::MinMax::FnMinMaxLow<IsMax>{}(Meta::static_cast_or_return_ref<larger_t<std::remove_cvref_t<P>...>>(EM_FWD(params))...) )
+    };
+
+    inline constexpr ApplyElementwiseFn<FnMinMax<false>, {}> min;
+    inline constexpr ApplyElementwiseFn<FnMinMax<true>, {}> max;
+
+
     inline namespace Common
     {
         using Math::make_floating_point;
@@ -262,6 +300,8 @@ namespace em::Math
         using Math::mix;
         using Math::sort_two;
         using Math::sort_two_var;
+        using Math::min;
+        using Math::max;
     }
 }
 
@@ -292,5 +332,18 @@ namespace em::Math
     EM_SIMPLE_ELEMENTWISE_FUNCTOR( prev_value,
         (template <scalar T>),
         (const T &value) EM_RETURNS( next_value_towards(value, std::numeric_limits<T>::lowest()) )
+    )
+
+
+    // Return the min/max element of a vector.
+    // This is primarily for third-party vectors. Prefer `.min()`/`.max()` for our own vectors.
+    // By dropping the `vector_cvref` concept we could accept any type, and then return it unchanged.
+    EM_SIMPLE_FUNCTOR(
+        vec_min,,
+        (vector_cvref auto &&value) EM_RETURNS( vec_apply(value, min) )
+    )
+    EM_SIMPLE_FUNCTOR(
+        vec_max,,
+        (vector_cvref auto &&value) EM_RETURNS( vec_apply(value, max) )
     )
 }

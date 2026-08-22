@@ -1,4 +1,4 @@
-#include "em/math/min_max.h"
+#include "em/math/functions.h"
 #include "em/math/vector.h"
 
 #include <string>
@@ -39,10 +39,13 @@ static_assert(std::is_same_v<decltype(em::min(em::ivec3(1,2,3), 2)), em::ivec3>)
 static_assert(std::is_same_v<decltype(em::min(em::ivec3(1,2,3), 2.f)), em::fvec3>);
 static_assert(std::is_same_v<decltype(em::min(em::fvec3(1,2,3), 2)), em::fvec3>);
 
-namespace
-{
-    template <typename ...P> concept CanEmMin = requires{em::min(std::declval<P>()...);};
-}
+template <typename ...P> concept CanMin = requires{em::min(std::declval<P>()...);};
 
-static_assert(!CanEmMin<em::ivec3, em::ivec2>);
-static_assert(!CanEmMin<em::ivec3, unsigned>);
+static_assert(!CanMin<em::ivec3, em::ivec2>);
+static_assert(!CanMin<em::ivec3, unsigned>);
+
+// Those have no `larger_t`.
+static_assert(!CanMin<short, unsigned short>);
+
+// This works though, because `int` wins. This would fail if we folded naively.
+static_assert(CanMin<short, unsigned short, int>);

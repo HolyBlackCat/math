@@ -9,6 +9,8 @@
 #include "em/meta/casts.h"
 #include "em/meta/functional.h"
 
+#include <cstddef>
+
 // This file defines helpers to apply functions to vectors and vector-like types elementwise.
 //
 // The primary usages are:
@@ -37,12 +39,14 @@ namespace em::Math
     // The customized versions of this must take a `<bool SameKind>` parameter. For example for vectors, if that's true,
     //   you must reject `vector + scalar` and only allow `vector + vector`.
     // Note that the customized versions must support the user callback returning void, and in that case probably they should return void too.
-    constexpr decltype(auto) _adl_em_apply_elementwise(/*func, params...*/) {}
+    // As an alternative to ADL, this function can always be found in this namespace, thanks to the helper first parameter.
+    constexpr decltype(auto) _adl_em_apply_elementwise(/*std::nullptr_t, func, params...*/) {}
     // This version is given a functor that returns a bool (or a type that can be cast to one).
     // When the functor returns true, it returns that return value. Otherwise returns a default-constructed value of the same type.
     // Must always return by value.
     // The customized versions of this must take a `<bool SameKind>` parameter, same as `_adl_em_apply_elementwise()`.
-    constexpr auto _adl_em_any_of_elementwise(/*func, params...*/) {}
+    // As an alternative to ADL, this function can always be found in this namespace, thanks to the helper first parameter.
+    constexpr auto _adl_em_any_of_elementwise(/*std::nullptr_t, func, params...*/) {}
 
 
     enum class ApplyElementwiseFlags
@@ -81,6 +85,7 @@ namespace em::Math
                 // This condition ensures that we prefer calling the function as-is over elementwise.
                 !requires{Meta::static_cast_to_cvref<F>(EM_FWD(self))(EM_FWD(params)...);},
                 EM_2<same_kind> EM_P(
+                    Meta::first_type_obscured<std::nullptr_t, F>{}, // `_obscured` just in case.
                     EM_4(EM_FWD(self)),
                     EM_FWD(params)...
                 )
@@ -99,6 +104,7 @@ namespace em::Math
             [[nodiscard]] EM_TINY constexpr auto operator()(this auto &&self, auto &&... params)
             EM_RETURNS EM_P(
                 EM_2<same_kind> EM_P(
+                    Meta::first_type_obscured<std::nullptr_t, F>{}, // `_obscured` just in case.
                     EM_4 EM_P(EM_1<Meta::FuncRef<Meta::copy_cvref<decltype(self), F>>, Flags & ~ApplyElementwiseFlags::nontrivial>{Meta::FuncRef(Meta::static_cast_to_cvref<F>(EM_FWD(self)))}),
                     EM_FWD(params)...
                 )

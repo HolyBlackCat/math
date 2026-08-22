@@ -253,3 +253,4 @@ static_assert(std::is_same_v<decltype(em::Math::next_value_towards(10.f, 20.f)),
 static_assert(em::Math::next_value(10) == 11);
 static_assert(em::Math::prev_value(10) == 9);
 static_assert(em::Math::next_value(em::ivec2(10, 20)) == em::ivec2(11, 21));
+static_assert(em::Math::prev_value(em::ivec2(10, 20)) == em::ivec2(9, 19));

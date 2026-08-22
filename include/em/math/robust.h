@@ -3,8 +3,6 @@
 #include "em/macros/utils/functors.h"
 #include "em/macros/utils/returns.h"
 #include "em/math/apply_elementwise.h"
-#include "em/math/larger_type.h"
-#include "em/math/scalar.h"
 #include "em/meta/compare.h"
 
 #include <cmath>

@@ -9,9 +9,19 @@ static_assert(noexcept(-em::vec<int, 2>(10, 20)));
 static_assert((em::vec<int, 2>(10, 20) + em::vec<int, 2>(100, 200)).x == 110);
 static_assert((em::vec<int, 2>(10, 20) + em::vec<int, 2>(100, 200)).y == 220);
 
+static_assert((em::vec<int, 2>(10, 20) + 100).x == 110);
+static_assert((em::vec<int, 2>(10, 20) + 100).y == 120);
+static_assert((100 + em::vec<int, 2>(10, 20)).x == 110);
+static_assert((100 + em::vec<int, 2>(10, 20)).y == 120);
+
 static_assert(std::is_same_v<decltype(em::vec<short, 2>() - em::vec<short, 2>()), em::vec<short, 2>>);
 static_assert(std::is_same_v<decltype(em::vec<short, 2>() - em::vec<int, 2>()), em::vec<int, 2>>);
 static_assert(std::is_same_v<decltype(em::vec<int, 2>() - em::vec<short, 2>()), em::vec<int, 2>>);
+
+// Lvalue arguments to operators:
+static_assert(std::is_same_v<decltype(-std::declval<em::vec<int, 2> &>()), em::vec<int, 2>>);
+static_assert(std::is_same_v<decltype(std::declval<em::vec<int, 2> &>() + std::declval<em::vec<int, 2> &>()), em::vec<int, 2>>);
+static_assert(std::is_same_v<decltype(std::declval<em::vec<int, 2>>() + std::declval<em::vec<int, 2> &>()), em::vec<int, 2>>);
 
 // Comparisons:
 
