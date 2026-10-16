@@ -206,6 +206,8 @@ namespace em::Math
         // Min/max of all elements.
         [[nodiscard]] EM_TINY constexpr auto min() EM_SOFT_RETURNS(vec_min(*this))
         [[nodiscard]] EM_TINY constexpr auto max() EM_SOFT_RETURNS(vec_min(*this))
+        // Absolute value.
+        [[nodiscard]] EM_TINY constexpr auto abs() EM_SOFT_RETURNS(Math::abs(*this))
 
         // Convert to shorter or longer vectors. When converting to a longer vector, either pass the missing components or they will be zeroed.
         [[nodiscard]] EM_TINY constexpr vec2<T> to_vec2(this auto &&self) requires (N > 2) {return vec2<T>(EM_FWD(self).x, EM_FWD(self).y);}
@@ -244,8 +246,6 @@ namespace em::Math
             using change_size = vec<T, M>;
         };
     }
-
-
 }
 
 // Expose `vec` and its typedefs into the `Common` namespace.

@@ -37,9 +37,11 @@ namespace em::Math
             }
 
             // Given `vecN<U>`, returns `vecN<T>`. Makes no sense for scalars.
+            // This should return the same type if `T == type`. But otherwise it doesn't have to roundtrip. If your vector is not templated, you can just return the default `vec<...>`.
             //   template <typename T> using change_base = ...;
             // Given `vec<T,M>`, returns `vec<T,N>`. Makes no sense for scalars.
             // You don't need to support `N == 1`, we do this ourselves.
+            // This should return the same type if `N == size`. But otherwise it doesn't have to roundtrip. If your vector is not templated, you can just return the default `vec<...>`.
             //   template <int N> using change_size = ...;
         };
     }

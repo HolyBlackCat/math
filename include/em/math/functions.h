@@ -14,11 +14,11 @@
 #include <limits>
 #include <utility>
 
-// Common functions start here.
-// Don't forget to add anything you add here to `inline namespace Common` at the bottom.
-// Lower in the file we have uncommon functions.
+// Some funcitons defined here are then added to `inline namespace Common` at the bottom, and some don't. They have to be interleaved, because they can call each other.
+// Functions NOT in `Common` are marked with `// [not in Common]`.
 
 // For now we don't include `em/math/vector.h` here, and only include `em/math/vector_traits.h`. This in theory allows accepting third-party vector types.
+// Avoid using members of `vec` to support third-party vectors. E.g. use `vec_min(v)` instead of `v.min()`.
 
 namespace em::Math
 {
@@ -265,6 +265,64 @@ namespace em::Math
     inline constexpr ApplyElementwiseFn<FnMinMax<true>, {}> max;
 
 
+    // [not in Common]
+    // Like `nextafter()`, but works with integers as well.
+    // `next_value_towards(a, b)` returns the next representable value after `a` in the direction towards `b`.
+    // `b` must be convertible to `a` without narrowing. The return type matches that of `a`.
+    EM_SIMPLE_ELEMENTWISE_FUNCTOR( next_value_towards,
+        (template <floating_point_scalar A, can_safely_convert_to<A> B>),
+        (const A &value, const B &target) EM_RETURNS( nextafter(value, A(target)) )
+        EM_OVERLOAD
+        (template <integral_scalar A, can_safely_convert_to<A> B>),
+        (const A &value, const B &target) EM_RETURNS( value + diffsign(A(target), value) ) // The plain `sign()` could overflow here.
+    )
+
+    // [not in Common]
+    // Returns the next representable value.
+    // Refuses to increment the largest representable value, and returns it unchanged.
+    // If asked to increment infinity in either direction, returns the closest representable value.
+    // If given NaN, returns NaN.
+    EM_SIMPLE_ELEMENTWISE_FUNCTOR( next_value,
+        (template <scalar T>),
+        (const T &value) EM_RETURNS( next_value_towards(value, std::numeric_limits<T>::max()) )
+    )
+    // [not in Common]
+    // Same, but returns the previous representable value.
+    EM_SIMPLE_ELEMENTWISE_FUNCTOR( prev_value,
+        (template <scalar T>),
+        (const T &value) EM_RETURNS( next_value_towards(value, std::numeric_limits<T>::lowest()) )
+    )
+
+    // [not in Common]
+    // Return the min/max element of a vector.
+    // This is primarily for third-party vectors. Prefer `.min()`/`.max()` for our own vectors.
+    // By dropping the `vector_cvref` concept we could accept any type, and then return it unchanged.
+    EM_SIMPLE_FUNCTOR(
+        vec_min,,
+        (vector_cvref auto &&value) EM_RETURNS( vec_apply(value, min) )
+    )
+    EM_SIMPLE_FUNCTOR(
+        vec_max,,
+        (vector_cvref auto &&value) EM_RETURNS( vec_apply(value, max) )
+    )
+
+
+    // Shrinks a vector as little as possible to give it specific proportions.
+    // Always returns a floating-point type.
+    EM_SIMPLE_FUNCTOR(
+        shrink_to_proportions,
+        (template <typename A, typename B, typename L = floating_point_t<A, B>>),
+        (const A &value, const B &proportions) EM_RETURNS( vec_min(L(value) / L(proportions)) * L(proportions) )
+    )
+    // Expands a vector as little as possible to give it specific proportions.
+    // Always returns a floating-point type.
+    EM_SIMPLE_FUNCTOR(
+        expand_to_proportions,
+        (template <typename A, typename B, typename L = floating_point_t<A, B>>),
+        (const A &value, const B &proportions) EM_RETURNS( vec_max(L(value) / L(proportions)) * L(proportions) )
+    )
+
+
     inline namespace Common
     {
         using Math::make_floating_point;
@@ -302,48 +360,7 @@ namespace em::Math
         using Math::sort_two_var;
         using Math::min;
         using Math::max;
+        using Math::shrink_to_proportions;
+        using Math::expand_to_proportions;
     }
-}
-
-// Uncommon functions start here. Those don't get added to `inline namespace Common`.
-
-namespace em::Math
-{
-    // Like `nextafter()`, but works with integers as well.
-    // `next_value_towards(a, b)` returns the next representable value after `a` in the direction towards `b`.
-    // `b` must be convertible to `a` without narrowing. The return type matches that of `a`.
-    EM_SIMPLE_ELEMENTWISE_FUNCTOR( next_value_towards,
-        (template <floating_point_scalar A, can_safely_convert_to<A> B>),
-        (const A &value, const B &target) EM_RETURNS( nextafter(value, A(target)) )
-        EM_OVERLOAD
-        (template <integral_scalar A, can_safely_convert_to<A> B>),
-        (const A &value, const B &target) EM_RETURNS( value + diffsign(A(target), value) ) // The plain `sign()` could overflow here.
-    )
-
-    // Returns the next representable value.
-    // Refuses to increment the largest representable value, and returns it unchanged.
-    // If asked to increment infinity in either direction, returns the closest representable value.
-    // If given NaN, returns NaN.
-    EM_SIMPLE_ELEMENTWISE_FUNCTOR( next_value,
-        (template <scalar T>),
-        (const T &value) EM_RETURNS( next_value_towards(value, std::numeric_limits<T>::max()) )
-    )
-    // Same, but returns the previous representable value.
-    EM_SIMPLE_ELEMENTWISE_FUNCTOR( prev_value,
-        (template <scalar T>),
-        (const T &value) EM_RETURNS( next_value_towards(value, std::numeric_limits<T>::lowest()) )
-    )
-
-
-    // Return the min/max element of a vector.
-    // This is primarily for third-party vectors. Prefer `.min()`/`.max()` for our own vectors.
-    // By dropping the `vector_cvref` concept we could accept any type, and then return it unchanged.
-    EM_SIMPLE_FUNCTOR(
-        vec_min,,
-        (vector_cvref auto &&value) EM_RETURNS( vec_apply(value, min) )
-    )
-    EM_SIMPLE_FUNCTOR(
-        vec_max,,
-        (vector_cvref auto &&value) EM_RETURNS( vec_apply(value, max) )
-    )
 }

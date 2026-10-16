@@ -235,9 +235,6 @@ static_assert(em::sort_two(1, 2.3f) == std::pair(1.f, 2.3f));
 static_assert(em::sort_two(em::ivec2(20, 30), em::fvec2(10.1f, 40.4f)) == std::pair(em::fvec2(10.1f, 30.f), em::fvec2(20.f, 40.4f)));
 
 
-
-// ----- Non-`Common` functions
-
 static_assert(std::is_same_v<decltype(em::Math::next_value_towards(10, 20)), int>);
 static_assert(em::Math::next_value_towards(10, 20) == 11);
 static_assert(em::Math::next_value_towards(10, 0) == 9);
@@ -254,3 +251,11 @@ static_assert(em::Math::next_value(10) == 11);
 static_assert(em::Math::prev_value(10) == 9);
 static_assert(em::Math::next_value(em::ivec2(10, 20)) == em::ivec2(11, 21));
 static_assert(em::Math::prev_value(em::ivec2(10, 20)) == em::ivec2(9, 19));
+
+static_assert(em::shrink_to_proportions(em::ivec2(10, 30), em::ivec2(100, 200)) == em::fvec2(10, 20));
+static_assert(std::is_same_v<decltype(em::shrink_to_proportions(em::ivec2(10, 30), em::ivec2(100, 200))), em::fvec2>);
+static_assert(em::shrink_to_proportions(em::ivec2(10, 30), em::ivec2(2, 1)) == em::fvec2(10, 5));
+
+static_assert((em::expand_to_proportions(em::ivec2(20, 60), em::ivec2(100, 200)) - em::fvec2(30, 60)).abs().min() < 0.001f); // This one happens to be inexact.
+static_assert(std::is_same_v<decltype(em::expand_to_proportions(em::ivec2(10, 30), em::ivec2(100, 200))), em::fvec2>);
+static_assert(em::expand_to_proportions(em::ivec2(10, 30), em::ivec2(2, 1)) == em::fvec2(60, 30));

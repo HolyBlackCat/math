@@ -42,10 +42,10 @@ namespace em::Math
     concept can_safely_convert_to = Customize::CanSafelyConvert<std::remove_cvref_t<T>, std::remove_cvref_t<U>>::value;
 
 
-    // Make a type floating-point.
-    template <typename T>
-    concept have_floating_point_type = have_larger_type<T, float>;
+    template <typename ...P>
+    concept have_floating_point_type = have_larger_type<float, P...>;
 
-    template <Meta::cvref_unqualified T> requires have_floating_point_type<T>
-    using floating_point_t = larger_t<T, float>;
+    // Make a type floating-point.
+    template <Meta::cvref_unqualified ...P> requires have_floating_point_type<P...>
+    using floating_point_t = larger_t<float, P...>;
 }
